@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
 import { toPng } from "html-to-image";
 import { HELICOPTERS, WIND_DIRECTIONS } from "@/lib/helicopters";
@@ -26,19 +25,8 @@ import LayoutCanvas from "@/components/LayoutCanvas";
 import PaletteBar from "@/components/PaletteBar";
 import WindRose from "@/components/WindRose";
 import Preview2D from "@/components/Preview2D";
+import LayoutSchematic from "@/components/LayoutSchematic";
 import { buildHeliportPdf } from "@/lib/exportPdf";
-
-const View3D = dynamic(
-  () => import(/* webpackChunkName: "view3d-preview" */ "@/components/View3D"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-[320px] items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-500">
-        Memuat pratinjau 3D…
-      </div>
-    ),
-  }
-);
 
 const STEPS = ["INPUT DATA", "PILIH KOMPONEN", "DESAIN LAYOUT", "CEK & HASIL"];
 
@@ -56,7 +44,7 @@ export default function Page() {
 
   const canvasRef = useRef(null);
   const resultRef = useRef(null);
-  const view3dRef = useRef(null);
+  const schematicRef = useRef(null);
 
   const dims = useMemo(() => computeAll(spec), [spec]);
   const windDir = lokasi.arahAngin ?? 270;
@@ -132,7 +120,7 @@ export default function Page() {
       steps: computeSteps(spec),
       recs: recommendations(spec, lokasi, validation),
       layoutPng: canvasRef.current?.exportDataURL?.(),
-      view3dPng: view3dRef.current?.captureSnapshot?.(),
+      schematicPng: schematicRef.current?.captureSnapshot?.(),
     });
   }
 
@@ -228,8 +216,6 @@ export default function Page() {
                 verdict={verdict}
                 onCek={cekDesain}
               />
-              <TipsPanel />
-              <OutputPanel />
             </section>
           </div>
 
@@ -247,7 +233,7 @@ export default function Page() {
                 verdict={verdict}
                 mahasiswa={mahasiswa}
                 canvasRef={canvasRef}
-                view3dRef={view3dRef}
+                schematicRef={schematicRef}
               />
               <div className="mt-4 flex gap-2">
                 <button className="btn-primary" onClick={exportPDF}>
@@ -563,50 +549,6 @@ function DesignCheckPanel({ validation, verdict, onCek }) {
   );
 }
 
-function TipsPanel() {
-  const tips = [
-    "Mulai dengan menempatkan TLOF di tengah.",
-    "Pastikan FATO mengelilingi TLOF.",
-    "Tambahkan Safety Area di luar FATO.",
-    "Pastikan approach path bebas dari obstacle.",
-    "Jangan lupa menambahkan Wind Cone.",
-  ];
-  return (
-    <div className="rounded-xl bg-sky-50 p-4 ring-1 ring-sky-100">
-      <p className="text-sm font-bold text-brand">TIPS UNTUK PEMULA</p>
-      <ul className="mt-3 space-y-2 text-xs text-slate-600">
-        {tips.map((t) => (
-          <li key={t} className="flex gap-2">
-            <span className="text-slate-400">•</span> {t}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function OutputPanel() {
-  const items = [
-    "Gambar Layout Heliport",
-    "Tabel Perhitungan Dimensi",
-    "Hasil Cek Kesesuaian",
-    "Rekomendasi (jika ada)",
-    "Export PDF / PNG",
-  ];
-  return (
-    <div className="rounded-xl bg-purple-50 p-4 ring-1 ring-purple-100">
-      <p className="text-sm font-bold text-purple-700">OUTPUT YANG AKAN DIDAPATKAN</p>
-      <ul className="mt-3 space-y-2 text-xs text-slate-600">
-        {items.map((t) => (
-          <li key={t} className="flex gap-2">
-            <span className="text-slate-400">•</span> {t}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 function DetailedResults({
   dims,
   spec,
@@ -618,7 +560,7 @@ function DetailedResults({
   verdict,
   mahasiswa,
   canvasRef,
-  view3dRef,
+  schematicRef,
 }) {
   const steps = computeSteps(spec);
   const recs = recommendations(spec, lokasi, validation);
@@ -720,8 +662,8 @@ function DetailedResults({
           <Preview2D canvasRef={canvasRef} />
         </div>
         <div>
-          <h4 className="mb-2 text-sm font-bold text-slate-700">Layout 3D</h4>
-          <View3D ref={view3dRef} dims={dims} />
+          <h4 className="mb-2 text-sm font-bold text-slate-700">Skema Layout Teknis</h4>
+          <LayoutSchematic ref={schematicRef} dims={dims} lokasi={lokasi} />
         </div>
       </div>
 

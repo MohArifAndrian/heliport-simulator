@@ -28,6 +28,10 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-2 text-sm text-sky-100 md:flex">
+          <Link href="/simulasi" className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 12h8M12 8v8" strokeLinecap="round" /></svg>
+            Simulasi
+          </Link>
           <Link href="/panduan" className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 5a2 2 0 0 1 2-2h6v18H6a2 2 0 0 1-2-2zM12 3h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6" /></svg>
             Panduan

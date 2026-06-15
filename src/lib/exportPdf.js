@@ -247,7 +247,7 @@ export function buildHeliportPdf(data) {
   addPage();
   heading("5. Pratinjau Layout");
   addImage(data.layoutPng, "Layout 2D (Kanvas Desain)", 95);
-  addImage(data.view3dPng, "Layout 3D (Pratinjau)", 95);
+  addImage(data.schematicPng, "Skema Layout Teknis (2D)", 95);
 
   pdf.save("heliport-hasil.pdf");
 }

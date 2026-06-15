@@ -766,49 +766,53 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
   }
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-lg ring-1 ring-slate-300"
-      onDrop={onDrop}
-      onDragOver={onDragOver}
-      onDragEnter={(e) => e.preventDefault()}
-    >
-      <canvas ref={elRef} />
-      <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-md bg-white/95 p-1 shadow ring-1 ring-slate-200">
-        <button
-          type="button"
-          className="grid h-7 w-7 place-items-center rounded text-sm font-bold text-slate-600 hover:bg-slate-100"
-          onClick={() => zoomByFactor(1 / VIEW_ZOOM_STEP)}
-          title="Zoom out"
-          aria-label="Zoom out"
-        >
-          −
-        </button>
-        <button
-          type="button"
-          className="min-w-[3rem] rounded px-1 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
-          onClick={resetViewZoom}
-          title="Reset zoom"
-        >
-          {viewZoomPct}%
-        </button>
-        <button
-          type="button"
-          className="grid h-7 w-7 place-items-center rounded text-sm font-bold text-slate-600 hover:bg-slate-100"
-          onClick={() => zoomByFactor(VIEW_ZOOM_STEP)}
-          title="Zoom in"
-          aria-label="Zoom in"
-        >
-          +
-        </button>
-      </div>
-      {selectInfo && (
-        <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-white shadow">
-          {selectInfo.label}: {selectInfo.w} × {selectInfo.h} m
+    <div className="w-full">
+      <div className="mb-2 flex items-center justify-end gap-1">
+        <div className="flex items-center gap-1 rounded-md bg-white p-1 shadow ring-1 ring-slate-200">
+          <button
+            type="button"
+            className="grid h-7 w-7 place-items-center rounded text-sm font-bold text-slate-600 hover:bg-slate-100"
+            onClick={() => zoomByFactor(1 / VIEW_ZOOM_STEP)}
+            title="Zoom out"
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className="min-w-[3rem] rounded px-1 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
+            onClick={resetViewZoom}
+            title="Reset zoom"
+          >
+            {viewZoomPct}%
+          </button>
+          <button
+            type="button"
+            className="grid h-7 w-7 place-items-center rounded text-sm font-bold text-slate-600 hover:bg-slate-100"
+            onClick={() => zoomByFactor(VIEW_ZOOM_STEP)}
+            title="Zoom in"
+            aria-label="Zoom in"
+          >
+            +
+          </button>
         </div>
-      )}
-      <p className="pointer-events-none absolute bottom-2 left-3 z-10 text-[10px] text-white/80 drop-shadow">
-        Scroll untuk zoom
-      </p>
+      </div>
+      <div
+        className="relative w-full overflow-hidden rounded-lg ring-1 ring-slate-300"
+        onDrop={onDrop}
+        onDragOver={onDragOver}
+        onDragEnter={(e) => e.preventDefault()}
+      >
+        <canvas ref={elRef} />
+        {selectInfo && (
+          <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-white shadow">
+            {selectInfo.label}: {selectInfo.w} × {selectInfo.h} m
+          </div>
+        )}
+        <p className="pointer-events-none absolute bottom-2 left-3 z-10 text-[10px] text-white/80 drop-shadow">
+          Scroll untuk zoom
+        </p>
+      </div>
     </div>
   );
 });
