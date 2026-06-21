@@ -4,22 +4,60 @@ import { WIND_CONE_ICON_URL } from "@/lib/windconeArt";
 import { BUILDING_IMAGE_URL, TREE_IMAGE_URL } from "@/lib/obstacleArt";
 import { MARSHALER_IMAGE_URL } from "@/lib/marshalerArt";
 
-export function PaletteTlofIcon() {
+const ICON_SIZE = 28;
+
+export function PalettePavementIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
-      <rect x="2" y="2" width="20" height="20" fill="#4f6868" stroke="#f0c931" strokeWidth="1.6" />
-      <rect x="2" y="2" width="3.2" height="3.2" fill="#c99200" />
-      <rect x="18.8" y="2" width="3.2" height="3.2" fill="#c99200" />
-      <rect x="2" y="18.8" width="3.2" height="3.2" fill="#c99200" />
-      <rect x="18.8" y="18.8" width="3.2" height="3.2" fill="#c99200" />
-      <circle cx="12" cy="12" r="7.8" fill="none" stroke="#f0c931" strokeWidth="1.6" />
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} aria-hidden>
+      <rect x="5" y="5" width="14" height="14" rx="1" fill="#9ca3af" />
+    </svg>
+  );
+}
+
+export function PaletteFatoPerimeterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} fill="none" aria-hidden>
+      <rect
+        x="5"
+        y="5"
+        width="14"
+        height="14"
+        stroke="#374151"
+        strokeWidth="1.5"
+        strokeDasharray="3.5 2.5"
+      />
+    </svg>
+  );
+}
+
+export function PaletteTlofPerimeterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} fill="none" aria-hidden>
+      <rect x="5" y="5" width="14" height="14" stroke="#1f2937" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+export function PaletteMarkingTouchdownIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="7" stroke="#eab308" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+export function PaletteMarkingHIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} fill="none" aria-hidden>
       <text
         x="12"
-        y="15.8"
+        y="16.5"
         textAnchor="middle"
-        fill="#ffffff"
-        fontSize="10"
-        fontWeight="900"
+        fill="none"
+        stroke="#6b7280"
+        strokeWidth="0.6"
+        fontSize="15"
+        fontWeight="400"
         fontFamily="Arial, Helvetica, sans-serif"
       >
         H
@@ -28,40 +66,19 @@ export function PaletteTlofIcon() {
   );
 }
 
-export function PaletteTlofRooftopIcon() {
+export function PaletteSafetyPerimeterIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
-      <rect x="2" y="2" width="20" height="20" fill="#d8161f" stroke="#fff" strokeWidth="1.2" />
-      <rect x="10.5" y="4" width="3" height="16" fill="#fff" />
-      <rect x="4" y="10.5" width="16" height="3" fill="#fff" />
-      <text x="12" y="14.5" textAnchor="middle" fill="#d8161f" fontSize="8" fontWeight="900" fontFamily="Arial, sans-serif">
-        H
-      </text>
-    </svg>
-  );
-}
-
-export function PaletteFatoIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
-      <rect x="4" y="4" width="16" height="16" rx="2.5" stroke="#1e293b" strokeWidth="2.5" />
-    </svg>
-  );
-}
-
-export function PaletteSafetyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
-      <rect x="4" y="4" width="16" height="16" rx="2.5" stroke="#16a34a" strokeWidth="2.5" />
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} fill="none" aria-hidden>
+      <rect x="5" y="5" width="14" height="14" stroke="#1f2937" strokeWidth="1.2" />
     </svg>
   );
 }
 
 export function PaletteApproachIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden className="text-brand">
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} aria-hidden className="text-brand">
       <path
-        d="M5 12h11.5M14 8l5 4-5 4"
+        d="M4 12h12M13 8l5 4-5 4"
         fill="none"
         stroke="currentColor"
         strokeWidth="2.5"
@@ -76,11 +93,12 @@ export function PaletteWindconeIcon() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`${WIND_CONE_ICON_URL}?width=44&height=44`}
-      width={22}
-      height={22}
+      src={`${WIND_CONE_ICON_URL}?width=56&height=56`}
+      width={ICON_SIZE}
+      height={ICON_SIZE}
       alt=""
       draggable={false}
+      className="object-contain"
     />
   );
 }
@@ -88,22 +106,44 @@ export function PaletteWindconeIcon() {
 export function PaletteGedungIcon() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={BUILDING_IMAGE_URL} width={22} height={22} alt="" draggable={false} className="object-contain" />
+    <img
+      src={BUILDING_IMAGE_URL}
+      width={ICON_SIZE}
+      height={ICON_SIZE}
+      alt=""
+      draggable={false}
+      className="object-contain"
+    />
   );
 }
 
 export function PalettePohonIcon() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={TREE_IMAGE_URL} width={22} height={22} alt="" draggable={false} className="object-contain" />
+    <img
+      src={TREE_IMAGE_URL}
+      width={ICON_SIZE}
+      height={ICON_SIZE}
+      alt=""
+      draggable={false}
+      className="object-contain"
+    />
   );
 }
 
 export function PaletteImcIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
-      <rect x="2" y="5" width="20" height="14" rx="2" fill="#ea580c" stroke="#fff" strokeWidth="1.2" />
-      <text x="12" y="13.5" textAnchor="middle" fill="#fff" fontSize="7" fontWeight="900" fontFamily="Arial, sans-serif">
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} aria-hidden>
+      <rect x="3" y="6" width="18" height="12" rx="2.5" fill="#ea580c" />
+      <text
+        x="12"
+        y="14"
+        textAnchor="middle"
+        fill="#fff"
+        fontSize="7.5"
+        fontWeight="900"
+        fontFamily="Arial, sans-serif"
+      >
         IMC
       </text>
     </svg>
@@ -112,9 +152,17 @@ export function PaletteImcIcon() {
 
 export function PaletteVmcIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
-      <rect x="2" y="5" width="20" height="14" rx="2" fill="#059669" stroke="#fff" strokeWidth="1.2" />
-      <text x="12" y="13.5" textAnchor="middle" fill="#fff" fontSize="7" fontWeight="900" fontFamily="Arial, sans-serif">
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} aria-hidden>
+      <rect x="3" y="6" width="18" height="12" rx="2.5" fill="#059669" />
+      <text
+        x="12"
+        y="14"
+        textAnchor="middle"
+        fill="#fff"
+        fontSize="7.5"
+        fontWeight="900"
+        fontFamily="Arial, sans-serif"
+      >
         VMC
       </text>
     </svg>
@@ -124,13 +172,20 @@ export function PaletteVmcIcon() {
 export function PaletteMarshalerIcon() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={MARSHALER_IMAGE_URL} width={22} height={22} alt="" draggable={false} className="object-contain" />
+    <img
+      src={MARSHALER_IMAGE_URL}
+      width={ICON_SIZE}
+      height={ICON_SIZE}
+      alt=""
+      draggable={false}
+      className="object-contain"
+    />
   );
 }
 
 export function PaletteTrashIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden className="text-red-500">
+    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} fill="none" aria-hidden className="text-red-500">
       <path
         d="M4 7h16M9 7V5h6v2M7 7l1 12h8l1-12"
         stroke="currentColor"
@@ -143,10 +198,14 @@ export function PaletteTrashIcon() {
 }
 
 export const PALETTE_CUSTOM_ICONS = {
-  tlof: PaletteTlofIcon,
-  "tlof-rooftop": PaletteTlofRooftopIcon,
-  fato: PaletteFatoIcon,
-  safety: PaletteSafetyIcon,
+  pavement: PalettePavementIcon,
+  "fato-perimeter": PaletteFatoPerimeterIcon,
+  fato: PaletteFatoPerimeterIcon,
+  "tlof-perimeter": PaletteTlofPerimeterIcon,
+  "marking-touchdown": PaletteMarkingTouchdownIcon,
+  "marking-h": PaletteMarkingHIcon,
+  "safety-perimeter": PaletteSafetyPerimeterIcon,
+  safety: PaletteSafetyPerimeterIcon,
   approach: PaletteApproachIcon,
   windcone: PaletteWindconeIcon,
   imc: PaletteImcIcon,
@@ -154,4 +213,18 @@ export const PALETTE_CUSTOM_ICONS = {
   marshaler: PaletteMarshalerIcon,
   "obstacle-gedung": PaletteGedungIcon,
   "obstacle-pohon": PalettePohonIcon,
+  delete: PaletteTrashIcon,
 };
+
+export function resolvePaletteIconKey(item) {
+  if (typeof item.icon === "string" && PALETTE_CUSTOM_ICONS[item.icon]) {
+    return item.icon;
+  }
+  return item.id;
+}
+
+export function PaletteIcon({ iconKey }) {
+  const Icon = PALETTE_CUSTOM_ICONS[iconKey];
+  if (!Icon) return <span className="h-7 w-7" aria-hidden />;
+  return <Icon />;
+}

@@ -119,8 +119,12 @@ export function buildHeliportPdf(data) {
   pdf.setFontSize(9);
   pdf.setFont("helvetica", "normal");
   pdf.text("Heliport Design Simulator · Versi Pemula", MARGIN, 22);
+  if (data.mode === "tugas") {
+    pdf.setFontSize(8);
+    pdf.text("Mode: TUGAS (hasil pemeriksaan otomatis)", MARGIN, 28);
+  }
   pdf.setTextColor(0, 0, 0);
-  y = 42;
+  y = data.mode === "tugas" ? 46 : 42;
 
   heading("Data Mahasiswa");
   kvTable([
@@ -210,7 +214,11 @@ export function buildHeliportPdf(data) {
     });
     y += 4;
   } else {
-    para("Belum dijalankan. Tekan tombol Cek Desain di simulator.");
+    para(
+      data.mode === "tugas"
+        ? "Pemeriksaan dijalankan otomatis saat submit tugas."
+        : "Belum dijalankan. Tekan tombol Cek Desain di simulator."
+    );
   }
 
   subheading("Tabel Kesesuaian Komponen");

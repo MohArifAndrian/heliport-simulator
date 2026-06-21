@@ -1,19 +1,24 @@
 "use client";
 
 import { useRef } from "react";
-import { PALETTE_ITEMS } from "@/lib/paletteConfig";
+import { PALETTE_ITEMS, DELETE_PALETTE_ITEM } from "@/lib/paletteConfig";
 import { makeWindconeDragGhost } from "@/lib/windconeArt";
-import { PALETTE_CUSTOM_ICONS, PaletteTrashIcon } from "@/components/paletteIcons";
+import { PaletteIcon, resolvePaletteIconKey } from "@/components/paletteIcons";
 
-export default function PaletteBar({ onAdd, onDelete, onHighlightBase }) {
+const ALL_ITEMS = [...PALETTE_ITEMS, DELETE_PALETTE_ITEM];
+
+export default function PaletteBar({ onAdd, onDelete }) {
   const ghostRef = useRef(null);
+  const suppressClickRef = useRef(false);
 
   function handleDragStart(e, item) {
-    if (!item.draggable) {
+    if (!item.draggable || item.type === "delete") {
       e.preventDefault();
       return;
     }
+    e.dataTransfer.setData("heli/id", item.id);
     e.dataTransfer.setData("heli/type", item.type);
+    e.dataTransfer.setData("text/plain", item.id);
     e.dataTransfer.effectAllowed = "copy";
 
     if (ghostRef.current) ghostRef.current.remove();
@@ -25,58 +30,94 @@ export default function PaletteBar({ onAdd, onDelete, onHighlightBase }) {
     } else {
       const clone = e.currentTarget.cloneNode(true);
       clone.style.cssText =
-        "position:fixed;top:-9999px;left:-9999px;width:80px;" +
+        "position:fixed;top:-9999px;left:-9999px;width:96px;" +
         "opacity:0.95;pointer-events:none;z-index:9999;";
       document.body.appendChild(clone);
       ghost = clone;
-      e.dataTransfer.setDragImage(clone, 40, 40);
+      e.dataTransfer.setDragImage(clone, 48, 48);
     }
     ghostRef.current = ghost;
   }
 
   function handleDragEnd() {
+    suppressClickRef.current = true;
+    setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 150);
     if (ghostRef.current) {
       ghostRef.current.remove();
       ghostRef.current = null;
     }
   }
 
-  function handleClick(item) {
-    onAdd?.(item.type);
+  function handleActivate(item) {
+    if (suppressClickRef.current) return;
+    if (item.type === "delete") {
+      onDelete?.();
+      return;
+    }
+    onAdd?.(item.id);
+  }
+
+  function handleKeyDown(e, item) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleActivate(item);
+    }
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {PALETTE_ITEMS.map((item) => (
-        <button
-          key={item.type}
-          type="button"
-          draggable={item.draggable}
-          onClick={() => handleClick(item)}
-          onDragStart={(e) => handleDragStart(e, item)}
-          onDragEnd={handleDragEnd}
-          title={item.hint}
-          className={`flex w-20 flex-col items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-[11px] font-medium text-slate-600 hover:border-brand hover:bg-white ${
-            item.draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
-          }`}
-        >
-          {(() => {
-            const Custom = PALETTE_CUSTOM_ICONS[item.type];
-            return Custom ? <Custom /> : null;
-          })()}
-          {item.label}
-        </button>
-      ))}
+    <div className="grid grid-cols-7 gap-2">
+      {ALL_ITEMS.map((item) => {
+        const isDelete = item.destructive;
+        const className = [
+          "flex min-h-[88px] flex-col items-center justify-center gap-1.5",
+          "rounded-lg border bg-white px-1.5 py-2",
+          "text-center text-[10px] font-medium leading-tight",
+          "select-none outline-none focus-visible:ring-2 focus-visible:ring-brand/40",
+          isDelete
+            ? "border-red-200 text-red-600 hover:border-red-300 hover:bg-red-50"
+            : "border-slate-200 text-slate-600 hover:border-brand hover:shadow-sm",
+          item.draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+        ].join(" ");
 
-      <button
-        type="button"
-        onClick={onDelete}
-        title="Hapus komponen terpilih (Delete / Backspace)"
-        className="flex w-20 flex-col items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2 py-2 text-[11px] font-medium text-red-600 hover:bg-red-100"
-      >
-        <PaletteTrashIcon />
-        Hapus
-      </button>
+        if (item.draggable) {
+          return (
+            <div
+              key={item.id}
+              role="button"
+              tabIndex={0}
+              draggable
+              onClick={() => handleActivate(item)}
+              onKeyDown={(e) => handleKeyDown(e, item)}
+              onDragStart={(e) => handleDragStart(e, item)}
+              onDragEnd={handleDragEnd}
+              title={item.hint}
+              className={className}
+            >
+              <span className="flex h-7 flex-none items-center justify-center pointer-events-none">
+                <PaletteIcon iconKey={resolvePaletteIconKey(item)} />
+              </span>
+              <span className="px-0.5 pointer-events-none">{item.label}</span>
+            </div>
+          );
+        }
+
+        return (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => handleActivate(item)}
+            title={item.hint}
+            className={className}
+          >
+            <span className="flex h-7 flex-none items-center justify-center">
+              <PaletteIcon iconKey={resolvePaletteIconKey(item)} />
+            </span>
+            <span className="px-0.5">{item.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

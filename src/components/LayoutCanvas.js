@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react";
-import { BASE_TYPES, DRAGGABLE_TYPES, TLOF_TYPES, isTlofType } from "@/lib/paletteConfig";
+import {
+  BASE_TYPES,
+  DRAGGABLE_IDS,
+  PRESENT_VALIDATION_MAP,
+  SCALABLE_PALETTE_IDS,
+  TLOF_TYPES,
+  getPaletteItemById,
+  isTlofType,
+} from "@/lib/paletteConfig";
 import { loadWindconeImage } from "@/lib/windconeArt";
 import {
   loadObstacleImage,
@@ -10,19 +18,22 @@ import {
 } from "@/lib/obstacleArt";
 import {
   createWeatherLabel,
-  defaultWeatherPosition,
   isWeatherType,
 } from "@/lib/weatherLabelArt";
 import { loadMarshalerImage } from "@/lib/marshalerArt";
+import { computeAll } from "@/lib/calc";
 
 // Fabric is imported dynamically (browser-only).
 let fabric = null;
+
+const FALLBACK_SPEC = { D: 13.8, OL: 16.66, UCW: 2.3, MTOM: 6400, vmc: 1 };
 
 const COLORS = {
   ground: "#7d9b5e",
   safety: "#c9d6bb",
   fato: "#b9bec4",
   tlof: "#4f6868",
+  pavement: "#55585a",
   marking: "#f0c931",
   markingCorner: "#c99200",
 };
@@ -38,10 +49,11 @@ const MAX_VIEW_ZOOM = 3;
 const VIEW_ZOOM_STEP = 1.15;
 
 const LayoutCanvas = forwardRef(function LayoutCanvas(
-  { dims, onComponentsChange, onSelectInfo, selectInfo },
+  { dims, onComponentsChange, onSelectInfo, selectInfo, onReady, fullSize = false },
   ref
 ) {
   const elRef = useRef(null);
+  const containerRef = useRef(null);
   const canvasRef = useRef(null);
   const scaleRef = useRef(8); // px per metre
   const viewZoomRef = useRef(1);
@@ -49,10 +61,40 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
   const componentsRef = useRef(new Set());
   const keyHandlerRef = useRef(null);
   const wheelHandlerRef = useRef(null);
+  const pendingAddsRef = useRef([]);
   const [viewZoomPct, setViewZoomPct] = useState(100);
+  const [canvasReady, setCanvasReady] = useState(false);
+
+  const layoutDims =
+    Number(dims.fato) > 0 && Number(dims.tlof) > 0 ? dims : computeAll(FALLBACK_SPEC);
+
+  function safetyExtentM(d = layoutDims) {
+    const extent = d.fato + 2 * d.safety;
+    return extent > 0 ? extent : 20;
+  }
+
+  function updateCanvasScale(d = layoutDims) {
+    const { w, h } = baseSizeRef.current;
+    scaleRef.current = (Math.min(w, h) * 0.7) / safetyExtentM(d);
+  }
+
+  function resizeCanvas(width, height) {
+    const c = canvasRef.current;
+    if (!c || width <= 0 || height <= 0) return;
+    const roundedW = Math.round(width);
+    const roundedH = Math.round(height);
+    const { w, h } = baseSizeRef.current;
+    if (w === roundedW && h === roundedH) return;
+    baseSizeRef.current = { w: roundedW, h: roundedH };
+    c.setDimensions({ width: roundedW, height: roundedH });
+    updateCanvasScale();
+    rebuildForDims();
+    c.requestRenderAll();
+  }
 
   useImperativeHandle(ref, () => ({
     addComponent: (type) => addComponent(type),
+    addPaletteItem: (id, pos) => addPaletteItem(id, pos),
     addComponentAt: (type, clientX, clientY) =>
       addComponent(type, pointerFromClient(clientX, clientY)),
     removeSelected: () => removeSelected(),
@@ -65,6 +107,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     getCanvasEl: () => elRef.current,
     getGeometry: () => getGeometry(),
     exportDataURL: () => exportCanvasDataURL(),
+    isReady: () => canvasReady,
   }));
 
   function baseRect(type) {
@@ -74,14 +117,24 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     return obj ? obj.getBoundingRect(true) : null;
   }
 
+  function componentRect(heliType) {
+    const c = canvasRef.current;
+    if (!c) return null;
+    const obj = c.getObjects().find((o) => o.heliType === heliType);
+    return obj ? obj.getBoundingRect(true) : null;
+  }
+
   function getGeometry() {
     const c = canvasRef.current;
     if (!c) return null;
     const s = scaleRef.current;
     const areas = {
-      tlof: baseRect("tlof") || baseRect("tlof-rooftop"),
-      fato: baseRect("fato"),
-      safety: baseRect("safety"),
+      tlof:
+        componentRect("tlof-perimeter") ||
+        baseRect("tlof") ||
+        baseRect("tlof-rooftop"),
+      fato: componentRect("fato") || baseRect("fato"),
+      safety: componentRect("safety") || baseRect("safety"),
     };
     const obstacles = [];
     const approaches = [];
@@ -106,7 +159,11 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     const types = new Set();
     if (c) {
       c.getObjects().forEach((o) => {
-        if (o.heliType) types.add(o.heliType);
+        if (o.heliType) {
+          types.add(o.heliType);
+          const validationKey = PRESENT_VALIDATION_MAP[o.heliType];
+          if (validationKey) types.add(validationKey);
+        }
         if (o.heliBase) {
           types.add(o.heliBase);
           if (isTlofType(o.heliBase)) types.add("tlof");
@@ -122,6 +179,19 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     if (!c) return null;
     const pointer = c.getPointer({ clientX, clientY });
     return { x: pointer.x, y: pointer.y };
+  }
+
+  function posToAt(pos) {
+    return pos ? { cx: pos.x, cy: pos.y } : null;
+  }
+
+  function canvasCenterPos() {
+    const { w, h } = baseSizeRef.current;
+    return { x: w / 2, y: h / 2 };
+  }
+
+  function defaultPlacementPos() {
+    return canvasCenterPos();
   }
 
   function clampViewZoom(zoom) {
@@ -191,6 +261,12 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       vmc: "VMC",
       marshaler: "Marshaler",
       approach: "Approach Path",
+      pavement: "Permukaan Heliport",
+      fato: "FATO Perimeter",
+      "tlof-perimeter": "TLOF Perimeter",
+      "marking-touchdown": "Marka Touchdown",
+      "marking-h": "Marka Identifikasi (H)",
+      safety: "Safety Area",
     };
     const kind = obj.heliBase || obj.heliObstacleKind || obj.heliType;
     onSelectInfo({
@@ -201,18 +277,37 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     });
   }
 
-  function styleBaseGroup(group) {
-    group.set({
-      hasControls: false,
+  function isScalableObject(obj) {
+    return Boolean(obj?.heliType || obj?.heliBase);
+  }
+
+  function styleInteractiveObject(obj, { scalable = true } = {}) {
+    obj.set({
+      selectable: true,
+      evented: true,
+      hasControls: true,
       hasBorders: true,
-      lockScalingX: true,
-      lockScalingY: true,
       lockRotation: true,
+      lockScalingX: !scalable,
+      lockScalingY: !scalable,
       cornerColor: "#1f4e9c",
       borderColor: "#1f4e9c",
       transparentCorners: false,
-      subTargetCheck: false,
     });
+    if (scalable && obj.setControlsVisibility) {
+      obj.setControlsVisibility({
+        mt: false,
+        mb: false,
+        ml: false,
+        mr: false,
+        mtr: false,
+      });
+    }
+  }
+
+  function styleBaseGroup(group) {
+    styleInteractiveObject(group, { scalable: true });
+    group.set({ subTargetCheck: false });
   }
 
   function canvasCenter() {
@@ -236,13 +331,13 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     notify();
   }
 
-  function createBaseGroup(type, at) {
+  function createBaseGroup(type, at, { variant = "full" } = {}) {
     if (!fabric) return null;
     const center = at || canvasCenter();
     const s = scaleRef.current;
-    const safetyD = (dims.fato + 2 * dims.safety) * s;
-    const fatoD = dims.fato * s;
-    const tlofD = dims.tlof * s;
+    const safetyD = (layoutDims.fato + 2 * layoutDims.safety) * s;
+    const fatoD = layoutDims.fato * s;
+    const tlofD = layoutDims.tlof * s;
 
     const mk = (size, fill, stroke, dash) =>
       new fabric.Rect({
@@ -260,10 +355,13 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
 
     let children = [];
     if (type === "safety") {
-      children = [mk(safetyD, COLORS.safety, "#ffffff", [6, 6])];
+      children = [createOutlineRect(safetyD, "#1f2937")];
     } else if (type === "fato") {
-      children = [mk(fatoD, COLORS.fato, "#ffffff", [4, 4])];
+      children = [createOutlineRect(fatoD, "#ffffff", [4, 4])];
     } else if (type === "tlof") {
+      if (variant === "perimeter") {
+        children = [createOutlineRect(tlofD, "#ffffff")];
+      } else {
       const half = tlofD / 2;
       const markW = Math.max(3, tlofD * 0.028);
       const cornerSize = Math.max(6, tlofD * 0.1);
@@ -336,7 +434,11 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
         evented: false,
       });
 
-      children = [pad, square, ...corners, circle, h];
+      children = [pad, square, ...corners];
+      if (variant === "full") {
+        children.push(circle, h);
+      }
+      }
     } else if (type === "tlof-rooftop") {
       const half = tlofD / 2;
       const red = "#d8161f";
@@ -414,6 +516,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       evented: true,
     });
     group.heliBase = type;
+    group.heliBaseVariant = variant;
     styleBaseGroup(group);
     return group;
   }
@@ -438,7 +541,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     keepScaleOnTop();
   }
 
-  function addBaseLayer(type, { silent = false, at = null } = {}) {
+  function addBaseLayer(type, { silent = false, at = null, variant = "full" } = {}) {
     const c = canvasRef.current;
     if (!c || !fabric || !BASE_TYPES.includes(type)) return;
 
@@ -452,7 +555,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       if (!silent) highlightBase(type);
       return;
     }
-    const group = createBaseGroup(type, at);
+    const group = createBaseGroup(type, at, { variant });
     if (!group) return;
     c.add(group);
     restackBases();
@@ -467,15 +570,53 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
   function rebuildForDims() {
     const c = canvasRef.current;
     if (!c || !fabric) return;
-    const positions = {};
-    BASE_TYPES.forEach((t) => {
-      const g = c.getObjects().find((o) => o.heliBase === t);
-      if (g) positions[t] = { cx: g.left, cy: g.top };
+
+    const scalable = [];
+    const bases = [];
+    const extras = [];
+
+    c.getObjects().forEach((o) => {
+      if (o.heliScale) return;
+      if (SCALABLE_PALETTE_IDS.includes(o.heliType)) {
+        scalable.push({
+          id: o.heliType,
+          at: { cx: o.left, cy: o.top },
+          scaleX: o.scaleX,
+          scaleY: o.scaleY,
+        });
+      } else if (o.heliBase) {
+        bases.push({
+          type: o.heliBase,
+          at: { cx: o.left, cy: o.top },
+          variant: o.heliBaseVariant || "full",
+          scaleX: o.scaleX,
+          scaleY: o.scaleY,
+        });
+      } else if (o.heliType) {
+        extras.push(o);
+      }
     });
-    const bases = BASE_TYPES.filter((t) => positions[t]);
-    const extras = c.getObjects().filter((o) => o.heliType);
+
     drawGround();
-    bases.forEach((t) => addBaseLayer(t, { silent: true, at: positions[t] }));
+
+    scalable.forEach(({ id, at, scaleX, scaleY }) => {
+      const obj = createComponentByPaletteId(id, at);
+      if (obj) {
+        if (scaleX != null) obj.set({ scaleX, scaleY: scaleY ?? scaleX });
+        styleInteractiveObject(obj);
+        c.add(obj);
+      }
+    });
+
+    bases.forEach(({ type, at, variant, scaleX, scaleY }) => {
+      const group = createBaseGroup(type, at, { variant });
+      if (group) {
+        if (scaleX != null) group.set({ scaleX, scaleY: scaleY ?? scaleX });
+        styleBaseGroup(group);
+        c.add(group);
+      }
+    });
+
     extras.forEach((o) => c.add(o));
     keepScaleOnTop();
     c.requestRenderAll();
@@ -550,14 +691,14 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     if (!c || !obj) return;
     if (pos) {
       obj.set({
-        left: pos.x - obj.getScaledWidth() / 2,
-        top: pos.y - obj.getScaledHeight() / 2,
+        left: pos.x,
+        top: pos.y,
+        originX: "center",
+        originY: "center",
       });
       obj.setCoords();
     }
-    obj.cornerColor = "#1f4e9c";
-    obj.borderColor = "#1f4e9c";
-    obj.transparentCorners = false;
+    styleInteractiveObject(obj, { scalable: isScalableObject(obj) });
     c.add(obj);
     c.setActiveObject(obj);
     emitInfo(obj);
@@ -565,56 +706,310 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     notify();
   }
 
+  function createOutlineRect(size, stroke, dash, strokeWidth = 1.5) {
+    return new fabric.Rect({
+      left: -size / 2,
+      top: -size / 2,
+      width: size,
+      height: size,
+      fill: "transparent",
+      stroke,
+      strokeDashArray: dash ?? undefined,
+      strokeWidth,
+      selectable: false,
+      evented: false,
+    });
+  }
+
+  function createLayerRect(size, fill, stroke, dash) {
+    return new fabric.Rect({
+      left: -size / 2,
+      top: -size / 2,
+      width: size,
+      height: size,
+      fill,
+      stroke,
+      strokeDashArray: dash,
+      strokeWidth: 1.5,
+      selectable: false,
+      evented: false,
+    });
+  }
+
+  function createFatoComponent(at) {
+    if (!fabric) return null;
+    const s = scaleRef.current;
+    const fatoD = layoutDims.fato * s;
+    const center = at || canvasCenter();
+    const group = new fabric.Group([createOutlineRect(fatoD, "#ffffff", [4, 4])], {
+      left: center.cx ?? center.x,
+      top: center.cy ?? center.y,
+      originX: "center",
+      originY: "center",
+    });
+    group.heliType = "fato";
+    return group;
+  }
+
+  function createSafetyComponent(at) {
+    if (!fabric) return null;
+    const s = scaleRef.current;
+    const safetyD = (layoutDims.fato + 2 * layoutDims.safety) * s;
+    const center = at || canvasCenter();
+    const group = new fabric.Group([createOutlineRect(safetyD, "#1f2937")], {
+      left: center.cx ?? center.x,
+      top: center.cy ?? center.y,
+      originX: "center",
+      originY: "center",
+    });
+    group.heliType = "safety";
+    return group;
+  }
+
+  function createTlofPerimeterComponent(at) {
+    if (!fabric) return null;
+    const s = scaleRef.current;
+    const tlofD = layoutDims.tlof * s;
+    const center = at || canvasCenter();
+    const group = new fabric.Group([createOutlineRect(tlofD, "#ffffff")], {
+      left: center.cx ?? center.x,
+      top: center.cy ?? center.y,
+      originX: "center",
+      originY: "center",
+    });
+    group.heliType = "tlof-perimeter";
+    return group;
+  }
+
+  function createApproachComponent(at) {
+    if (!fabric) return null;
+    const s = scaleRef.current;
+    const H = baseSizeRef.current.h;
+    const lenPx = COMPONENT_M.approachLen * s;
+    const center = at || { cx: 30 + lenPx / 2, cy: H / 2 };
+
+    const line = new fabric.Line([0, 12, lenPx, 12], {
+      stroke: "#1f4e9c",
+      strokeWidth: 4,
+      strokeDashArray: [10, 6],
+    });
+    const head = new fabric.Triangle({
+      left: lenPx,
+      top: 0,
+      width: 22,
+      height: 24,
+      angle: 90,
+      fill: "#1f4e9c",
+    });
+    const group = new fabric.Group([line, head], {
+      left: center.cx ?? center.x,
+      top: center.cy ?? center.y,
+      originX: "center",
+      originY: "center",
+    });
+    group.heliType = "approach";
+    return group;
+  }
+
+  function createComponentByPaletteId(id, at) {
+    switch (id) {
+      case "pavement":
+        return createPavement(at);
+      case "fato":
+        return createFatoComponent(at);
+      case "tlof-perimeter":
+        return createTlofPerimeterComponent(at);
+      case "marking-touchdown":
+        return createMarkingTouchdown(at);
+      case "marking-h":
+        return createMarkingH(at);
+      case "safety":
+        return createSafetyComponent(at);
+      case "approach":
+        return createApproachComponent(at);
+      default:
+        return null;
+    }
+  }
+
+  function createPavement(at) {
+    if (!fabric) return null;
+    const s = scaleRef.current;
+    const size = layoutDims.fato * s;
+    const center = at || canvasCenter();
+    const pad = new fabric.Rect({
+      left: -size / 2,
+      top: -size / 2,
+      width: size,
+      height: size,
+      fill: COLORS.pavement,
+      selectable: false,
+      evented: false,
+    });
+    const group = new fabric.Group([pad], {
+      left: center.cx ?? center.x,
+      top: center.cy ?? center.y,
+      originX: "center",
+      originY: "center",
+    });
+    group.heliType = "pavement";
+    return group;
+  }
+
+  function createMarkingTouchdown(at) {
+    if (!fabric) return null;
+    const s = scaleRef.current;
+    const tlofD = layoutDims.tlof * s;
+    const half = tlofD / 2;
+    const markW = Math.max(3, tlofD * 0.028);
+    const circleR = half * 0.84;
+    const center = at || canvasCenter();
+
+    const circle = new fabric.Circle({
+      left: 0,
+      top: 0,
+      radius: circleR,
+      originX: "center",
+      originY: "center",
+      fill: "",
+      stroke: COLORS.marking,
+      strokeWidth: markW,
+      selectable: false,
+      evented: false,
+    });
+
+    const group = new fabric.Group([circle], {
+      left: center.cx ?? center.x,
+      top: center.cy ?? center.y,
+      originX: "center",
+      originY: "center",
+    });
+    group.heliType = "marking-touchdown";
+    return group;
+  }
+
+  function createMarkingH(at) {
+    if (!fabric) return null;
+    const s = scaleRef.current;
+    const tlofD = layoutDims.tlof * s;
+    const half = tlofD / 2;
+    const circleR = half * 0.84;
+    const center = at || canvasCenter();
+
+    const h = new fabric.Text("H", {
+      left: 0,
+      top: 0,
+      originX: "center",
+      originY: "center",
+      fontSize: Math.max(20, circleR * 1.05),
+      fontWeight: "900",
+      fill: "#ffffff",
+      fontFamily: "Arial, Helvetica, sans-serif",
+      selectable: false,
+      evented: false,
+    });
+
+    const group = new fabric.Group([h], {
+      left: center.cx ?? center.x,
+      top: center.cy ?? center.y,
+      originX: "center",
+      originY: "center",
+    });
+    group.heliType = "marking-h";
+    return group;
+  }
+
+  function flushPendingAdds() {
+    const pending = pendingAddsRef.current.splice(0);
+    pending.forEach(({ id, pos }) => addPaletteItem(id, pos));
+  }
+
+  function addPaletteItem(id, pos) {
+    const item = getPaletteItemById(id);
+    if (!item) return;
+
+    const c = canvasRef.current;
+    if (!c || !fabric) {
+      pendingAddsRef.current.push({ id, pos: pos ?? null });
+      return;
+    }
+
+    const placement = pos ?? defaultPlacementPos();
+    const at = posToAt(placement);
+    const s = scaleRef.current;
+
+    const syncObj = createComponentByPaletteId(id, at);
+    if (syncObj) {
+      placeComponent(syncObj, placement);
+      return;
+    }
+
+    if (id === "windcone") {
+      loadWindconeImage(fabric, s, (img) => {
+        if (!img || canvasRef.current !== c) return;
+        placeComponent(img, placement);
+      });
+      return;
+    }
+
+    if (isObstacleType(item.type)) {
+      const kind = obstacleKindFromType(item.type);
+      loadObstacleImage(fabric, kind, s, (img) => {
+        if (!img || canvasRef.current !== c) return;
+        placeComponent(img, placement);
+      });
+      return;
+    }
+
+    if (item.type === "marshaler") {
+      loadMarshalerImage(fabric, s, (img) => {
+        if (!img || canvasRef.current !== c) return;
+        placeComponent(img, placement);
+      });
+      return;
+    }
+
+    if (isWeatherType(item.type)) {
+      const obj = createWeatherLabel(fabric, item.type, s);
+      placeComponent(obj, placement);
+      return;
+    }
+
+    addComponent(item.type, placement);
+  }
+
   function addComponent(type, pos) {
     const c = canvasRef.current;
     if (!c || !fabric) return;
+    const placement = pos ?? defaultPlacementPos();
     if (BASE_TYPES.includes(type)) {
-      const at = pos ? { cx: pos.x, cy: pos.y } : null;
-      addBaseLayer(type, { at });
+      addBaseLayer(type, { at: posToAt(placement) });
       return;
     }
-    const W = baseSizeRef.current.w;
-    const H = baseSizeRef.current.h;
     const s = scaleRef.current;
     let obj = null;
 
     if (type === "windcone") {
       loadWindconeImage(fabric, s, (img) => {
         if (!img || canvasRef.current !== c) return;
-        if (!pos) img.set({ left: W - 90, top: 60 });
-        placeComponent(img, pos);
+        placeComponent(img, placement);
       });
       return;
     } else if (isObstacleType(type)) {
       const kind = obstacleKindFromType(type);
       loadObstacleImage(fabric, kind, s, (img) => {
         if (!img || canvasRef.current !== c) return;
-        if (!pos) img.set({ left: 80, top: 80 });
-        placeComponent(img, pos);
+        placeComponent(img, placement);
       });
       return;
     } else if (type === "marshaler") {
       loadMarshalerImage(fabric, s, (img) => {
         if (!img || canvasRef.current !== c) return;
-        if (!pos) {
-          img.set({
-            left: W / 2 - img.getScaledWidth() / 2,
-            top: H / 2 - img.getScaledHeight() / 2,
-          });
-        }
-        placeComponent(img, pos);
+        placeComponent(img, placement);
       });
       return;
     } else if (isWeatherType(type)) {
-      const existing = c.getObjects().find((o) => o.heliType === type);
-      if (existing) {
-        c.setActiveObject(existing);
-        emitInfo(existing);
-        c.requestRenderAll();
-        return;
-      }
       obj = createWeatherLabel(fabric, type, s);
-      if (!pos) defaultWeatherPosition(c, obj, type);
     } else if (type === "approach") {
       const lenPx = COMPONENT_M.approachLen * s;
       const line = new fabric.Line([0, 12, lenPx, 12], {
@@ -630,11 +1025,11 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
         angle: 90,
         fill: "#1f4e9c",
       });
-      obj = new fabric.Group([line, head], { left: pos?.x ?? 30, top: pos?.y ?? H / 2 });
+      obj = new fabric.Group([line, head]);
       obj.heliType = "approach";
     }
 
-    if (obj) placeComponent(obj, pos);
+    if (obj) placeComponent(obj, placement);
   }
 
   function removeSelected() {
@@ -668,9 +1063,9 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       const mod = await import("fabric");
       fabric = mod.fabric || mod.default || mod;
       if (!mounted || !elRef.current) return;
-      const parent = elRef.current.parentElement;
-      const width = parent ? parent.clientWidth : 640;
-      const height = 420;
+      const container = containerRef.current;
+      const width = container?.clientWidth || 640;
+      const height = container?.clientHeight || (fullSize ? 480 : 420);
       baseSizeRef.current = { w: width, h: height };
       const c = new fabric.Canvas(elRef.current, {
         width,
@@ -680,8 +1075,8 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       });
       canvasRef.current = c;
 
-      const safetyMetres = dims.fato + 2 * dims.safety || 20;
-      scaleRef.current = (Math.min(width, height) * 0.7) / safetyMetres;
+      const initExtent = layoutDims.fato + 2 * layoutDims.safety || 20;
+      scaleRef.current = (Math.min(width, height) * 0.7) / initExtent;
 
       // selection / transform events -> emit live size info
       const handleSel = (e) => emitInfo((e.selected && e.selected[0]) || c.getActiveObject());
@@ -694,6 +1089,9 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
 
       drawGround();
       notify();
+      setCanvasReady(true);
+      flushPendingAdds();
+      onReady?.();
 
       canvasEl = elRef.current;
       wheelHandlerRef.current = (e) => {
@@ -738,25 +1136,44 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
         canvasRef.current.dispose();
         canvasRef.current = null;
       }
+      setCanvasReady(false);
+      pendingAddsRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !canvasReady) return;
+    const syncSize = () => {
+      resizeCanvas(container.clientWidth, container.clientHeight);
+    };
+    const ro = new ResizeObserver(() => syncSize());
+    ro.observe(container);
+    syncSize();
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvasReady, fullSize]);
+
   // redraw base when dims change
   useEffect(() => {
     if (!canvasRef.current || !fabric) return;
-    const { w, h } = baseSizeRef.current;
-    const safetyMetres = dims.fato + 2 * dims.safety || 20;
-    scaleRef.current = (Math.min(w, h) * 0.7) / safetyMetres;
+    updateCanvasScale();
     rebuildForDims();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dims.fato, dims.safety, dims.tlof]);
 
   function onDrop(e) {
     e.preventDefault();
+    const pos = pointerFromClient(e.clientX, e.clientY);
+    const id = e.dataTransfer.getData("heli/id");
+    if (id && DRAGGABLE_IDS.includes(id)) {
+      addPaletteItem(id, pos);
+      return;
+    }
     const type = e.dataTransfer.getData("heli/type");
-    if (DRAGGABLE_TYPES.includes(type) || BASE_TYPES.includes(type) || isObstacleType(type) || isWeatherType(type)) {
-      addComponent(type, pointerFromClient(e.clientX, e.clientY));
+    if (type && type !== "delete") {
+      addComponent(type, pos);
     }
   }
 
@@ -798,7 +1215,10 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
         </div>
       </div>
       <div
-        className="relative w-full overflow-hidden rounded-lg ring-1 ring-slate-300"
+        ref={containerRef}
+        className={`relative w-full overflow-hidden rounded-lg ring-1 ring-slate-300 ${
+          fullSize ? "aspect-[16/10] min-h-[420px]" : "h-[420px]"
+        }`}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onDragEnter={(e) => e.preventDefault()}

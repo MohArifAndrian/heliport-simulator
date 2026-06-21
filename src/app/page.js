@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
-import { MathJax, MathJaxContext } from "better-react-mathjax";
+import dynamic from "next/dynamic";
+import { useMemo, useRef, useState, useCallback, useEffect } from "react";
+import { MathJax } from "better-react-mathjax";
 import { toPng } from "html-to-image";
-import { HELICOPTERS, WIND_DIRECTIONS } from "@/lib/helicopters";
+import { WIND_DIRECTIONS } from "@/lib/helicopters";
 import {
   computeAll,
   checkStatus,
@@ -21,30 +22,59 @@ import {
 import SiteHeader, { MahasiswaModal } from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { isMahasiswaComplete, useMahasiswa } from "@/lib/session";
-import LayoutCanvas from "@/components/LayoutCanvas";
 import PaletteBar from "@/components/PaletteBar";
 import WindRose from "@/components/WindRose";
 import Preview2D from "@/components/Preview2D";
 import LayoutSchematic from "@/components/LayoutSchematic";
 import { buildHeliportPdf } from "@/lib/exportPdf";
+import ModeSwitch from "@/components/ModeSwitch";
+import { useSimulatorMode } from "@/lib/simulatorMode";
+
+const LayoutCanvas = dynamic(() => import("@/components/LayoutCanvas"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[456px] items-center justify-center rounded-lg bg-slate-100 text-sm text-slate-500 ring-1 ring-slate-300">
+      Memuat kanvas…
+    </div>
+  ),
+});
+
+const MathJaxProvider = dynamic(() => import("@/components/MathJaxProvider"), {
+  ssr: false,
+});
 
 const STEPS = ["INPUT DATA", "PILIH KOMPONEN", "DESAIN LAYOUT", "CEK & HASIL"];
 
 export default function Page() {
   const [step, setStep] = useState(0);
-  const [helicopter, setHelicopter] = useState("aw139");
-  const [spec, setSpec] = useState({ D: 13.8, OL: 16.66, UCW: 2.3, MTOM: 6400, vmc: 1 });
+  const [helicopterName, setHelicopterName] = useState("");
+  const [spec, setSpec] = useState({ D: "", OL: "", UCW: "", MTOM: "", vmc: "" });
   const [lokasi, setLokasi] = useState({ panjang: 60, lebar: 60, adaObstacle: false });
   const [present, setPresent] = useState([]);
   const [selInfo, setSelInfo] = useState(null);
   const [validation, setValidation] = useState(null); // array of checks or null
   const [dimHitung, setDimHitung] = useState(false);
+  const { mode, setMode, isTugasMode } = useSimulatorMode();
   const { mahasiswa, save } = useMahasiswa();
   const [pdfProfileOpen, setPdfProfileOpen] = useState(false);
 
   const canvasRef = useRef(null);
+  const pendingPaletteRef = useRef([]);
   const resultRef = useRef(null);
   const schematicRef = useRef(null);
+
+  const flushPendingPalette = useCallback(() => {
+    const pending = pendingPaletteRef.current.splice(0);
+    pending.forEach((id) => canvasRef.current?.addPaletteItem?.(id));
+  }, []);
+
+  const handlePaletteAdd = useCallback((id) => {
+    if (canvasRef.current?.addPaletteItem) {
+      canvasRef.current.addPaletteItem(id);
+      return;
+    }
+    pendingPaletteRef.current.push(id);
+  }, []);
 
   const dims = useMemo(() => computeAll(spec), [spec]);
   const windDir = lokasi.arahAngin ?? 270;
@@ -63,20 +93,23 @@ export default function Page() {
     const geo = canvasRef.current?.getGeometry?.();
     const result = validateDesign(dims, geo, lokasi);
     setValidation(result);
-    setStep(3);
-  }
-
-  function onSelectHelicopter(id) {
-    setHelicopter(id);
-    const h = HELICOPTERS.find((x) => x.id === id);
-    if (h && id !== "custom") {
-      setSpec((s) => ({ ...s, D: h.D, OL: h.OL, UCW: h.UCW, MTOM: h.MTOM }));
+    if (!isTugasMode) {
+      setStep(3);
     }
   }
 
+  function resolveValidationForExport() {
+    if (!isTugasMode && validation) return validation;
+    const geo = canvasRef.current?.getGeometry?.();
+    return validateDesign(dims, geo, lokasi);
+  }
+
   function field(key, value) {
-    setSpec((s) => ({ ...s, [key]: value === "" ? "" : Number(value) }));
-    if (helicopter !== "custom") setHelicopter("custom");
+    if (key === "vmc") {
+      setSpec((s) => ({ ...s, vmc: value === "" ? "" : Number(value) }));
+      return;
+    }
+    setSpec((s) => ({ ...s, [key]: value }));
   }
 
   const checks = useMemo(() => {
@@ -101,11 +134,11 @@ export default function Page() {
   }
 
   function buildPdfReport(mhs) {
-    const heliName =
-      HELICOPTERS.find((h) => h.id === helicopter)?.name ||
-      (helicopter === "custom" ? "Custom" : helicopter);
+    const heliName = helicopterName.trim() || "-";
     const windLabel =
       WIND_DIRECTIONS.find((w) => w.value === Number(lokasi?.arahAngin ?? 270))?.label ?? "-";
+    const validationForPdf = resolveValidationForExport();
+    const verdictForPdf = designVerdict(validationForPdf);
 
     buildHeliportPdf({
       mahasiswa: mhs,
@@ -114,13 +147,14 @@ export default function Page() {
       lokasi,
       windLabel,
       dims,
-      validation,
-      verdict,
+      validation: validationForPdf,
+      verdict: verdictForPdf,
       checks,
       steps: computeSteps(spec),
-      recs: recommendations(spec, lokasi, validation),
+      recs: recommendations(spec, lokasi, validationForPdf),
       layoutPng: canvasRef.current?.exportDataURL?.(),
       schematicPng: schematicRef.current?.captureSnapshot?.(),
+      mode,
     });
   }
 
@@ -129,8 +163,19 @@ export default function Page() {
       setPdfProfileOpen(true);
       return;
     }
+    if (isTugasMode) {
+      const validationForPdf = resolveValidationForExport();
+      setValidation(validationForPdf);
+    }
     buildPdfReport(mahasiswa);
   }
+
+  const visibleSteps = isTugasMode ? STEPS.slice(0, 3) : STEPS;
+  const activeStep = isTugasMode && step >= 3 ? 2 : step;
+
+  useEffect(() => {
+    if (isTugasMode && step >= 3) setStep(2);
+  }, [isTugasMode, step]);
 
   const allOk =
     present.includes("tlof") &&
@@ -138,19 +183,25 @@ export default function Page() {
     present.includes("safety");
 
   return (
-    <MathJaxContext>
-      <div className="min-h-screen">
-        <SiteHeader />
-        <Stepper step={step} setStep={setStep} />
+    <div className="min-h-screen">
+      <SiteHeader />
+      <ModeSwitch mode={mode} onChange={setMode} />
+      <Stepper step={activeStep} setStep={setStep} steps={visibleSteps} isTugasMode={isTugasMode} />
 
-        <main className="mx-auto max-w-[1400px] px-4 pb-16">
+      <main className="mx-auto max-w-[1400px] px-4 pb-16">
+          {isTugasMode && (
+            <p className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-xs text-amber-900 ring-1 ring-amber-200">
+              <b>Mode Tugas:</b> Dimensi minimum dan cek hasil tidak ditampilkan saat mendesain.
+              Hasil perhitungan dan pemeriksaan akan muncul setelah Anda menekan <b>Submit Tugas (PDF)</b>.
+            </p>
+          )}
           {/* layout: left input, center canvas, right results */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             {/* LEFT */}
             <section className="space-y-4 lg:col-span-3">
               <InputPanel
-                helicopter={helicopter}
-                onSelectHelicopter={onSelectHelicopter}
+                helicopterName={helicopterName}
+                onHelicopterNameChange={setHelicopterName}
                 spec={spec}
                 field={field}
               />
@@ -160,31 +211,34 @@ export default function Page() {
                 lokasi={lokasi}
                 setLokasi={setLokasi}
               />
-              <MinDimPanel dims={dims} highlight={dimHitung} onHitung={hitungDimensi} />
+              {!isTugasMode && (
+                <MinDimPanel dims={dims} highlight={dimHitung} onHitung={hitungDimensi} />
+              )}
             </section>
 
             {/* CENTER */}
-            <section className="lg:col-span-6">
+            <section className={isTugasMode ? "lg:col-span-9" : "lg:col-span-6"}>
               <div className="card overflow-hidden">
                 <div className="card-header bg-brand flex items-center justify-between">
                   <span>3. DESAIN LAYOUT (DRAG &amp; DROP KOMPONEN KE AREA)</span>
                 </div>
                 <div className="p-4">
                   <PaletteBar
-                    onAdd={(t) => canvasRef.current?.addComponent(t)}
+                    onAdd={handlePaletteAdd}
                     onDelete={() => canvasRef.current?.removeSelected()}
-                    onHighlightBase={(t) => canvasRef.current?.highlightBase(t)}
                   />
                   <p className="my-3 flex items-center gap-2 rounded-md bg-sky-50 px-3 py-2 text-xs text-sky-800 ring-1 ring-sky-100">
                     <span className="grid h-4 w-4 place-items-center rounded-full bg-sky-500 text-[10px] font-bold text-white">i</span>
-                    Petunjuk: Klik atau drag komponen ke kanvas. TLOF, FATO, dan Safety Area bisa dipilih, digeser, atau dihapus dengan tombol Del / Backspace.
+                    Petunjuk: Klik atau drag komponen ke kanvas. Tarik sudut komponen untuk memperbesar atau memperkecil. TLOF, FATO, dan Safety Area bisa dipilih, digeser, atau dihapus dengan tombol Del / Backspace.
                   </p>
                   <LayoutCanvas
                       ref={canvasRef}
                       dims={dims}
+                      fullSize={isTugasMode}
                       onComponentsChange={setPresent}
                       onSelectInfo={setSelInfo}
                       selectInfo={selInfo}
+                      onReady={flushPendingPalette}
                     />
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
                     <div className="flex gap-2">
@@ -199,51 +253,61 @@ export default function Page() {
                       <button className="btn-ghost" onClick={exportPNG}>
                         Simpan PNG
                       </button>
-                      <button className="btn-primary" onClick={cekDesain}>
-                        Cek Desain <IconArrow />
-                      </button>
+                      {isTugasMode ? (
+                        <button className="btn-primary" onClick={exportPDF}>
+                          Submit Tugas (PDF) <IconArrow />
+                        </button>
+                      ) : (
+                        <button className="btn-primary" onClick={cekDesain}>
+                          Cek Desain <IconArrow />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* RIGHT */}
-            <section className="space-y-4 lg:col-span-3">
-              <ResultsPanel checks={checks} />
-              <DesignCheckPanel
-                validation={validation}
-                verdict={verdict}
-                onCek={cekDesain}
-              />
-            </section>
+            {/* RIGHT — hanya Mode Latihan */}
+            {!isTugasMode && (
+              <section className="space-y-4 lg:col-span-3">
+                <ResultsPanel checks={checks} />
+                <DesignCheckPanel
+                  validation={validation}
+                  verdict={verdict}
+                  onCek={cekDesain}
+                />
+              </section>
+            )}
           </div>
 
-          {/* DETAILED RESULTS (step 4) */}
-          {step === 3 && (
-            <div className="mt-6" ref={resultRef}>
-              <DetailedResults
-                dims={dims}
-                spec={spec}
-                checks={checks}
-                allOk={allOk}
-                helicopter={helicopter}
-                lokasi={lokasi}
-                validation={validation}
-                verdict={verdict}
-                mahasiswa={mahasiswa}
-                canvasRef={canvasRef}
-                schematicRef={schematicRef}
-              />
-              <div className="mt-4 flex gap-2">
-                <button className="btn-primary" onClick={exportPDF}>
-                  Export PDF
-                </button>
-                <button className="btn-ghost" onClick={exportPNG}>
-                  Export PNG
-                </button>
+          {/* DETAILED RESULTS (step 4) — hanya Mode Latihan */}
+          {!isTugasMode && step === 3 && (
+            <MathJaxProvider>
+              <div className="mt-6" ref={resultRef}>
+                <DetailedResults
+                  dims={dims}
+                  spec={spec}
+                  checks={checks}
+                  allOk={allOk}
+                  helicopterName={helicopterName}
+                  lokasi={lokasi}
+                  validation={validation}
+                  verdict={verdict}
+                  mahasiswa={mahasiswa}
+                  canvasRef={canvasRef}
+                  schematicRef={schematicRef}
+                />
+                <div className="mt-4 flex gap-2">
+                  <button className="btn-primary" onClick={exportPDF}>
+                    Export PDF
+                  </button>
+                  <button className="btn-ghost" onClick={exportPNG}>
+                    Export PNG
+                  </button>
+                </div>
               </div>
-            </div>
+            </MathJaxProvider>
           )}
         </main>
 
@@ -262,18 +326,23 @@ export default function Page() {
           />
         )}
       </div>
-    </MathJaxContext>
   );
 }
 /* ---------------- sub components ---------------- */
 
-function Stepper({ step, setStep }) {
+function Stepper({ step, setStep, steps = STEPS, isTugasMode = false }) {
   return (
     <div className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-[1400px] items-center px-6 py-3">
-        {STEPS.map((label, i) => (
+        {steps.map((label, i) => (
           <div key={label} className="flex flex-1 items-center last:flex-none">
-            <button onClick={() => setStep(i)} className="flex items-center gap-2 text-sm">
+            <button
+              onClick={() => {
+                if (isTugasMode && i >= 3) return;
+                setStep(i);
+              }}
+              className="flex items-center gap-2 text-sm"
+            >
               <span
                 className={`grid h-6 w-6 flex-none place-items-center rounded-full text-xs font-bold ${
                   i <= step ? "bg-green-500 text-white" : "bg-slate-200 text-slate-500"
@@ -289,7 +358,7 @@ function Stepper({ step, setStep }) {
                 {label}
               </span>
             </button>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <span className="mx-3 h-px flex-1 bg-slate-200" />
             )}
           </div>
@@ -299,33 +368,71 @@ function Stepper({ step, setStep }) {
   );
 }
 
-function InputPanel({ helicopter, onSelectHelicopter, spec, field }) {
+function isPositiveNumber(value) {
+  if (value === "" || value === null || value === undefined) return true;
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0;
+}
+
+function InputPanel({ helicopterName, onHelicopterNameChange, spec, field }) {
+  const numericInvalid = {
+    D: !isPositiveNumber(spec.D),
+    OL: !isPositiveNumber(spec.OL),
+    UCW: !isPositiveNumber(spec.UCW),
+    MTOM: !isPositiveNumber(spec.MTOM),
+  };
+
   return (
-    <div className="card">
+    <div className="card overflow-hidden">
       <div className="card-header bg-brand">1. INPUT DATA HELIKOPTER</div>
       <div className="space-y-3 p-4">
-        <div>
-          <label className="field-label">Pilih Helikopter (contoh)</label>
-          <select
-            className="field-input"
-            value={helicopter}
-            onChange={(e) => onSelectHelicopter(e.target.value)}
-          >
-            {HELICOPTERS.map((h) => (
-              <option key={h.id} value={h.id}>{h.name}</option>
-            ))}
-          </select>
-        </div>
-        <NumField label="Rotor Diameter (D)" unit="m" value={spec.D} onChange={(v) => field("D", v)} />
-        <NumField label="Overall Length (OL)" unit="m" value={spec.OL} onChange={(v) => field("OL", v)} />
-        <NumField label="Undercarriage Width (UCW)" unit="m" value={spec.UCW} onChange={(v) => field("UCW", v)} />
-        <NumField label="MTOM" unit="kg" value={spec.MTOM} onChange={(v) => field("MTOM", v)} />
+        <p className="text-xs text-slate-500">Mahasiswa mengisi data helikopter secara mandiri.</p>
+
+        <TextField
+          label="Nama/Tipe Helikopter"
+          value={helicopterName}
+          placeholder="Masukkan nama/tipenya"
+          onChange={onHelicopterNameChange}
+        />
+        <NumField
+          label="Rotor Diameter (D)"
+          unit="m"
+          value={spec.D}
+          invalid={numericInvalid.D}
+          onChange={(v) => field("D", v)}
+        />
+        <NumField
+          label="Overall Length (OL)"
+          unit="m"
+          value={spec.OL}
+          invalid={numericInvalid.OL}
+          onChange={(v) => field("OL", v)}
+        />
+        <NumField
+          label="Undercarriage Width (UCW)"
+          unit="m"
+          value={spec.UCW}
+          invalid={numericInvalid.UCW}
+          onChange={(v) => field("UCW", v)}
+        />
+        <NumField
+          label="MTOM"
+          unit="kg"
+          value={spec.MTOM}
+          invalid={numericInvalid.MTOM}
+          onChange={(v) => field("MTOM", v)}
+        />
         <div>
           <label className="field-label">Performance Class (VMC)</label>
-          <select className="field-input" value={spec.vmc} onChange={(e) => field("vmc", e.target.value)}>
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-            <option value={3}>3</option>
+          <select
+            className="field-input"
+            value={spec.vmc === "" ? "" : String(spec.vmc)}
+            onChange={(e) => field("vmc", e.target.value)}
+          >
+            <option value="">Pilih kelas</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
           </select>
         </div>
       </div>
@@ -333,21 +440,43 @@ function InputPanel({ helicopter, onSelectHelicopter, spec, field }) {
   );
 }
 
-function NumField({ label, unit, value, onChange }) {
+function TextField({ label, value, placeholder, onChange }) {
+  return (
+    <div>
+      <label className="field-label">{label}</label>
+      <input
+        type="text"
+        className="field-input"
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function NumField({ label, unit, value, onChange, invalid = false }) {
   return (
     <div>
       <label className="field-label">{label}</label>
       <div className="relative">
         <input
           type="number"
-          className="field-input pr-10"
+          min="0"
+          step="any"
+          inputMode="decimal"
+          className={`field-input pr-10 ${invalid ? "border-red-400 focus:border-red-500 focus:ring-red-200" : ""}`}
           value={value}
+          placeholder="Masukkan nilai"
           onChange={(e) => onChange(e.target.value)}
         />
         <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
           {unit}
         </span>
       </div>
+      {invalid && (
+        <p className="mt-1 text-[11px] text-red-600">Masukkan angka lebih dari 0.</p>
+      )}
     </div>
   );
 }
@@ -375,9 +504,9 @@ function LocationPanel({ windDir, setWindDir, lokasi, setLokasi }) {
         </div>
         <div>
           <label className="field-label">Arah Angin Dominan</label>
-          <select className="field-input" value={windDir} onChange={(e) => setWindDir(Number(e.target.value))}>
+          <select className="field-input" value={String(windDir)} onChange={(e) => setWindDir(Number(e.target.value))}>
             {WIND_DIRECTIONS.map((w) => (
-              <option key={w.value} value={w.value}>{w.label}</option>
+              <option key={w.value} value={String(w.value)}>{w.label}</option>
             ))}
           </select>
         </div>
@@ -554,7 +683,7 @@ function DetailedResults({
   spec,
   checks,
   allOk,
-  helicopter,
+  helicopterName,
   lokasi,
   validation,
   verdict,
@@ -564,9 +693,7 @@ function DetailedResults({
 }) {
   const steps = computeSteps(spec);
   const recs = recommendations(spec, lokasi, validation);
-  const heliName =
-    HELICOPTERS.find((h) => h.id === helicopter)?.name ||
-    (helicopter === "custom" ? "Custom" : helicopter);
+  const heliName = helicopterName.trim() || "-";
   const windLabel =
     WIND_DIRECTIONS.find((w) => w.value === Number(lokasi?.arahAngin ?? 270))?.label ?? "-";
 
@@ -594,11 +721,11 @@ function DetailedResults({
           <table className="w-full border-collapse text-sm">
             <tbody>
               <DataRow k="Jenis Helikopter" v={heliName} />
-              <DataRow k="Rotor Diameter (D)" v={`${spec.D} m`} />
-              <DataRow k="Overall Length (OL)" v={`${spec.OL} m`} />
-              <DataRow k="Undercarriage Width (UCW)" v={`${spec.UCW} m`} />
-              <DataRow k="MTOM" v={`${spec.MTOM} kg`} />
-              <DataRow k="Performance Class" v={`PC ${spec.vmc}`} />
+              <DataRow k="Rotor Diameter (D)" v={spec.D ? `${spec.D} m` : "-"} />
+              <DataRow k="Overall Length (OL)" v={spec.OL ? `${spec.OL} m` : "-"} />
+              <DataRow k="Undercarriage Width (UCW)" v={spec.UCW ? `${spec.UCW} m` : "-"} />
+              <DataRow k="MTOM" v={spec.MTOM ? `${spec.MTOM} kg` : "-"} />
+              <DataRow k="Performance Class" v={spec.vmc ? `PC ${spec.vmc}` : "-"} />
             </tbody>
           </table>
         </div>

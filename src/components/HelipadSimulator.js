@@ -1,7 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useRef, useState } from "react";
-import { MathJax, MathJaxContext } from "better-react-mathjax";
+import { MathJax } from "better-react-mathjax";
 import { jsPDF } from "jspdf";
 import HelipadInputPanel from "@/components/HelipadInputPanel";
 import LayoutSchematic from "@/components/LayoutSchematic";
@@ -10,6 +11,10 @@ import {
   computeHelipadMetrics,
   fatoDiameter,
 } from "@/lib/helipadConfig";
+
+const MathJaxProvider = dynamic(() => import("@/components/MathJaxProvider"), {
+  ssr: false,
+});
 
 const TABS = [
   { id: "2d", label: "Diagram 2D" },
@@ -181,7 +186,7 @@ export default function HelipadSimulator() {
   }
 
   return (
-    <MathJaxContext>
+    <MathJaxProvider>
       <div className="space-y-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Belajar</p>
@@ -237,6 +242,6 @@ export default function HelipadSimulator() {
           </div>
         </div>
       </div>
-    </MathJaxContext>
+    </MathJaxProvider>
   );
 }
