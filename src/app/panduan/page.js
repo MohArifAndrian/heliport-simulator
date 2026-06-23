@@ -81,8 +81,9 @@ export default function PanduanPage() {
           </p>
         </div>
 
-        <div className="mt-6">
-          <Link href="/" className="btn-primary">Mulai Mendesain</Link>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/latihan" className="btn-primary">Mulai Mode Latihan</Link>
+          <Link href="/tugas" className="btn-ghost">Mulai Mode Tugas</Link>
         </div>
       </main>
       <SiteFooter />

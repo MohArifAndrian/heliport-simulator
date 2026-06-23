@@ -174,6 +174,18 @@ export function buildHeliportPdf(data) {
     ["Total Extent (FATO + 2×Safety)", `${data.dims.overall} m`],
   ]);
 
+  if (data.mode === "tugas" && data.tugasCheck?.length) {
+    heading("3a. Jawaban Dimensi Huruf (A–O)");
+    drawTableHeader(["Huruf", "Dimensi", "Jawaban", "Kunci", "Status"], [0.08, 0.34, 0.18, 0.18, 0.22]);
+    data.tugasCheck.forEach((row) => {
+      const jawaban = row.entered != null ? `${row.entered} m` : "-";
+      const kunci = `${row.expected} m`;
+      const st = row.status === "ok" ? "Benar" : row.status === "fail" ? "Salah" : "Kosong";
+      tableRow([row.letter, row.label, jawaban, kunci, st], [0.08, 0.34, 0.18, 0.18, 0.22]);
+    });
+    y += 4;
+  }
+
   if (data.steps?.length) {
     subheading("Langkah Perhitungan");
     data.steps.forEach((s, idx) => {

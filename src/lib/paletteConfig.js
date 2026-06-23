@@ -71,22 +71,6 @@ export const PALETTE_ITEMS = [
     hint: "Klik atau drag ke kanvas",
   },
   {
-    id: "imc",
-    type: "imc",
-    label: "IMC",
-    icon: "imc",
-    draggable: true,
-    hint: "Label IMC — default pojok kanan atas, bisa digeser",
-  },
-  {
-    id: "vmc",
-    type: "vmc",
-    label: "VMC",
-    icon: "vmc",
-    draggable: true,
-    hint: "Label VMC — default pojok kanan atas, bisa digeser",
-  },
-  {
     id: "marshaler",
     type: "marshaler",
     label: "Marshaler",

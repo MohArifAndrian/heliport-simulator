@@ -28,6 +28,14 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-2 text-sm text-sky-100 md:flex">
+          <Link href="/latihan" className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3l9 4.5v9L12 21 3 16.5v-9L12 3z" /><path d="M12 12l9-4.5M12 12v9M12 12L3 7.5" /></svg>
+            Latihan
+          </Link>
+          <Link href="/tugas" className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4" strokeLinecap="round" strokeLinejoin="round" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+            Tugas
+          </Link>
           <Link href="/simulasi" className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M8 12h8M12 8v8" strokeLinecap="round" /></svg>
             Simulasi
@@ -39,6 +47,10 @@ export default function SiteHeader() {
           <Link href="/tentang" className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7M12 17v.5" strokeLinecap="round" /></svg>
             Tentang
+          </Link>
+          <Link href="/dosen/login" className="flex items-center gap-1.5 rounded bg-white/10 px-2 py-1 hover:bg-white/20">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" strokeLinecap="round" /></svg>
+            Portal Dosen
           </Link>
           <div className="relative">
             <button onClick={() => setUserOpen((v) => !v)} className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">

@@ -1,6 +1,6 @@
 /** IMC / VMC weather label components for the layout canvas. */
 
-export const WEATHER_TYPES = ["imc", "vmc"];
+export const WEATHER_TYPES = ["vmc", "imc"];
 
 export function isWeatherType(type) {
   return WEATHER_TYPES.includes(type);
@@ -60,24 +60,20 @@ export function createWeatherLabel(fabric, kind, scalePxPerM) {
   return group;
 }
 
-/** Default slot: pojok kanan atas — IMC di atas, VMC di bawahnya. */
+/** Default slot: pojok kanan atas — IMC kiri, VMC kanan (sejajar horizontal). */
 export function defaultWeatherPosition(canvas, obj, kind) {
   const margin = 14;
   const gap = 6;
   const w = canvas.getWidth();
   const objW = obj.getScaledWidth();
-  const objH = obj.getScaledHeight();
+  const top = margin;
 
-  let top = margin;
   if (kind === "vmc") {
-    const imc = canvas.getObjects().find((o) => o.heliType === "imc");
-    if (imc) top = imc.top + imc.getScaledHeight() + gap;
-    else top = margin + objH + gap;
+    obj.set({ left: w - objW - margin, top });
+  } else {
+    const vmc = canvas.getObjects().find((o) => o.heliType === "vmc");
+    const left = vmc ? vmc.left - gap - objW : w - objW - margin;
+    obj.set({ left, top });
   }
-
-  obj.set({
-    left: w - objW - margin,
-    top,
-  });
   obj.setCoords();
 }

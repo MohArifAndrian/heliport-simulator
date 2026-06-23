@@ -18,7 +18,9 @@ import {
 } from "@/lib/obstacleArt";
 import {
   createWeatherLabel,
+  defaultWeatherPosition,
   isWeatherType,
+  WEATHER_TYPES,
 } from "@/lib/weatherLabelArt";
 import { loadMarshalerImage } from "@/lib/marshalerArt";
 import { computeAll } from "@/lib/calc";
@@ -315,12 +317,43 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     return { cx: w / 2, cy: h / 2 };
   }
 
+  function styleFixedWeatherLabel(obj) {
+    obj.set({
+      selectable: false,
+      evented: false,
+      hasControls: false,
+      hasBorders: false,
+      lockMovementX: true,
+      lockMovementY: true,
+    });
+  }
+
+  function syncWeatherLabels() {
+    const c = canvasRef.current;
+    if (!c || !fabric) return;
+    const s = scaleRef.current;
+
+    c.getObjects()
+      .filter((o) => isWeatherType(o.heliType))
+      .forEach((o) => c.remove(o));
+
+    WEATHER_TYPES.forEach((kind) => {
+      const obj = createWeatherLabel(fabric, kind, s);
+      obj.heliFixed = true;
+      styleFixedWeatherLabel(obj);
+      c.add(obj);
+      defaultWeatherPosition(c, obj, kind);
+    });
+    keepScaleOnTop();
+  }
+
   function drawGround() {
     const c = canvasRef.current;
     if (!c || !fabric) return;
     c.clear();
     c.backgroundColor = COLORS.ground;
     drawScaleBar();
+    syncWeatherLabels();
   }
 
   function resetCanvas() {
@@ -592,7 +625,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
           scaleX: o.scaleX,
           scaleY: o.scaleY,
         });
-      } else if (o.heliType) {
+      } else if (o.heliType && !isWeatherType(o.heliType)) {
         extras.push(o);
       }
     });
@@ -618,6 +651,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     });
 
     extras.forEach((o) => c.add(o));
+    syncWeatherLabels();
     keepScaleOnTop();
     c.requestRenderAll();
     notify();
@@ -934,6 +968,8 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       return;
     }
 
+    if (isWeatherType(item.type)) return;
+
     const placement = pos ?? defaultPlacementPos();
     const at = posToAt(placement);
     const s = scaleRef.current;
@@ -966,12 +1002,6 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
         if (!img || canvasRef.current !== c) return;
         placeComponent(img, placement);
       });
-      return;
-    }
-
-    if (isWeatherType(item.type)) {
-      const obj = createWeatherLabel(fabric, item.type, s);
-      placeComponent(obj, placement);
       return;
     }
 
@@ -1009,7 +1039,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       });
       return;
     } else if (isWeatherType(type)) {
-      obj = createWeatherLabel(fabric, type, s);
+      return;
     } else if (type === "approach") {
       const lenPx = COMPONENT_M.approachLen * s;
       const line = new fabric.Line([0, 12, lenPx, 12], {
@@ -1035,7 +1065,9 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
   function removeSelected() {
     const c = canvasRef.current;
     if (!c) return;
-    const active = c.getActiveObjects().filter((o) => o.heliType || o.heliBase);
+    const active = c.getActiveObjects().filter(
+      (o) => (o.heliType || o.heliBase) && !o.heliFixed && !isWeatherType(o.heliType)
+    );
     if (active.length === 0) return;
     active.forEach((o) => c.remove(o));
     c.discardActiveObject();
@@ -1048,7 +1080,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     const c = canvasRef.current;
     if (!c) return;
     c.getObjects()
-      .filter((o) => o.heliType || o.heliBase)
+      .filter((o) => (o.heliType || o.heliBase) && !o.heliFixed && !isWeatherType(o.heliType))
       .forEach((o) => c.remove(o));
     onSelectInfo?.(null);
     c.requestRenderAll();
