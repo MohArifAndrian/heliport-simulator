@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
-import { DOSEN_COOKIE, verifySessionToken, getDosenCredentials } from "@/lib/dosenAuth";
+import { DOSEN_COOKIE, verifySessionToken } from "@/lib/dosenAuth";
+import { ROLE_LABELS } from "@/lib/roles";
 
 export async function GET() {
   const token = cookies().get(DOSEN_COOKIE)?.value;
@@ -9,6 +10,10 @@ export async function GET() {
   }
   return Response.json({
     authenticated: true,
-    nama: getDosenCredentials().nama,
+    nama: session.nama,
+    email: session.email,
+    role: session.role,
+    userId: session.userId,
+    roleLabel: ROLE_LABELS[session.role] || session.role,
   });
 }

@@ -12,9 +12,12 @@ export function getDosenCredentials() {
   };
 }
 
-export function createSessionToken() {
+export function createSessionToken(user) {
   const payload = JSON.stringify({
-    role: "dosen",
+    role: user.role,
+    email: user.email,
+    nama: user.nama,
+    userId: user.id,
     exp: Date.now() + SESSION_MAX_AGE * 1000,
   });
   const sig = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { PALETTE_ITEMS, DELETE_PALETTE_ITEM } from "@/lib/paletteConfig";
 import { makeWindconeDragGhost } from "@/lib/windconeArt";
+import { isWeatherType, makeWeatherDragGhost } from "@/lib/weatherLabelArt";
 import { PaletteIcon, resolvePaletteIconKey } from "@/components/paletteIcons";
 
 const ALL_ITEMS = [...PALETTE_ITEMS, DELETE_PALETTE_ITEM];
@@ -27,6 +28,9 @@ export default function PaletteBar({ onAdd, onDelete }) {
     if (item.type === "windcone") {
       ghost = makeWindconeDragGhost();
       e.dataTransfer.setDragImage(ghost, 36, 40);
+    } else if (isWeatherType(item.type)) {
+      ghost = makeWeatherDragGhost(item.type);
+      e.dataTransfer.setDragImage(ghost, 36, 28);
     } else {
       const clone = e.currentTarget.cloneNode(true);
       clone.style.cssText =

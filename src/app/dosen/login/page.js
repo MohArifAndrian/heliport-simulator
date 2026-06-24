@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { IconH } from "@/components/icons";
+import { DosenLogo } from "@/components/icons";
 
 export default function DosenLoginPage() {
   const router = useRouter();
@@ -38,22 +38,31 @@ export default function DosenLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-100 via-sky-50 to-slate-200">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12">
-        <div className="mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-xl bg-brand text-white shadow-lg">
-              <IconH />
-            </div>
-          </Link>
-          <h1 className="mt-4 text-2xl font-extrabold text-slate-800">Portal Dosen</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Penilaian Khusus — Mode Tugas Heliport
-          </p>
-        </div>
+    <div className="flex min-h-screen flex-col bg-portal-surface">
+      <div className="h-1 bg-accent" />
+      <div className="bg-brand-darker px-4 py-8 text-center text-white">
+        <Link href="/" className="inline-flex flex-col items-center gap-3">
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl bg-white p-2 shadow-portal-lg">
+            <DosenLogo className="h-full w-full" />
+          </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-portal-cyan">
+              Politeknik Penerbangan Indonesia
+            </p>
+            <h1 className="mt-1 text-xl font-extrabold uppercase tracking-wide sm:text-2xl">
+              Portal Penilaian
+            </h1>
+            <p className="mt-1 text-sm text-white/70">Heliport Design Simulator</p>
+          </div>
+        </Link>
+      </div>
 
-        <form onSubmit={handleSubmit} className="card p-6 shadow-md">
-          <h2 className="mb-4 text-lg font-bold text-slate-800">Masuk</h2>
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10">
+        <form onSubmit={handleSubmit} className="card p-6 shadow-portal-lg">
+          <h2 className="mb-1 text-lg font-extrabold uppercase tracking-wide text-brand-dark">Masuk</h2>
+          <p className="mb-5 text-sm text-slate-600">
+            Admin atau Dosen — akses dashboard penilaian Mode Tugas.
+          </p>
 
           {error && (
             <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-100">
@@ -67,7 +76,7 @@ export default function DosenLoginPage() {
             className="field-input mb-4"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="dosen@heliport.id"
+            placeholder="admin@heliport.id atau dosen@heliport.id"
             required
             autoComplete="username"
           />
@@ -86,22 +95,26 @@ export default function DosenLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary w-full justify-center disabled:opacity-60"
+            className="btn-accent w-full justify-center disabled:opacity-60"
           >
             {loading ? "Memproses…" : "Masuk ke Dashboard"}
           </button>
 
-          <p className="mt-4 text-center text-xs text-slate-400">
-            Hanya dosen yang dapat mengakses hasil penilaian mahasiswa.
+          <p className="mt-4 text-center text-xs text-slate-500">
+            Hanya admin dan dosen yang dapat mengakses portal penilaian.
           </p>
         </form>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
-          <Link href="/" className="text-brand hover:underline">
+        <p className="mt-6 text-center text-xs text-slate-500">
+          <Link href="/" className="font-semibold text-brand hover:underline">
             ← Kembali ke Simulator
           </Link>
         </p>
       </div>
+
+      <footer className="border-t border-slate-200 bg-brand-dark py-4 text-center text-xs text-white/60">
+        © Heliport Design Simulator — Politeknik Penerbangan Indonesia
+      </footer>
     </div>
   );
 }

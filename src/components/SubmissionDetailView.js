@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { TUGAS_LETTER_DEFS } from "@/lib/tugasDimensions";
 import { checkStatus } from "@/lib/calc";
+import { formatDateLongId } from "@/lib/formatDate";
 
 function StatusBadge({ status }) {
   const map = {
@@ -51,25 +52,36 @@ export default function SubmissionDetailView({ data }) {
     layoutPng,
     schematicPng,
     submittedAt,
+    id,
+    pdfFile,
   } = data;
 
-  const submittedDate = submittedAt
-    ? new Date(submittedAt).toLocaleString("id-ID", {
-        dateStyle: "long",
-        timeStyle: "short",
-      })
-    : "-";
+  const submittedDate = formatDateLongId(submittedAt);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Detail Penilaian Khusus</h2>
-          <p className="mt-1 text-sm text-slate-500">Dikirim: {submittedDate}</p>
+          <h2 className="portal-page-title">Detail Penilaian Khusus</h2>
+          <p className="mt-1 text-sm text-slate-500" suppressHydrationWarning>
+            Dikirim: {submittedDate}
+          </p>
         </div>
-        <Link href="/dosen" className="btn-outline text-sm">
-          ← Kembali ke Daftar
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {(pdfFile || id) && (
+            <a
+              href={`/api/submissions/${id}/pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary text-sm"
+            >
+              Lihat PDF Laporan
+            </a>
+          )}
+          <Link href="/dosen" className="btn-outline text-sm">
+            ← Kembali ke Daftar
+          </Link>
+        </div>
       </div>
 
       {/* Ringkasan */}
@@ -104,7 +116,7 @@ export default function SubmissionDetailView({ data }) {
 
       {/* Data Mahasiswa */}
       <div className="card overflow-hidden">
-        <div className="card-header bg-brand">1. DATA MAHASISWA</div>
+        <div className="card-header-portal">1. DATA MAHASISWA</div>
         <div className="grid gap-0 p-4 sm:grid-cols-2">
           <InfoRow label="Nama" value={mahasiswa?.nama} />
           <InfoRow label="NIM" value={mahasiswa?.nim} />
@@ -116,7 +128,7 @@ export default function SubmissionDetailView({ data }) {
 
       {/* Spesifikasi */}
       <div className="card overflow-hidden">
-        <div className="card-header bg-emerald-600">2. SPESIFIKASI HELIKOPTER & LOKASI</div>
+        <div className="card-header-portal">2. SPESIFIKASI HELIKOPTER & LOKASI</div>
         <div className="grid gap-0 p-4 sm:grid-cols-2">
           <InfoRow label="D (rotor)" value={`${spec?.D} m`} />
           <InfoRow label="OL" value={`${spec?.OL} m`} />
@@ -131,7 +143,7 @@ export default function SubmissionDetailView({ data }) {
 
       {/* Tabel A-O */}
       <div className="card overflow-hidden">
-        <div className="card-header bg-amber-600">3. PENILAIAN DIMENSI A–O (KP 215)</div>
+        <div className="card-header-portal">3. PENILAIAN DIMENSI A–O (KP 215)</div>
         <div className="overflow-x-auto p-4">
           <table className="w-full text-left text-xs">
             <thead>
@@ -169,7 +181,7 @@ export default function SubmissionDetailView({ data }) {
 
       {/* Cek Layout */}
       <div className="card overflow-hidden">
-        <div className="card-header bg-purple-700">4. CEK DESAIN LAYOUT</div>
+        <div className="card-header-portal">4. CEK DESAIN LAYOUT</div>
         <div className="overflow-x-auto p-4">
           <table className="w-full text-left text-xs">
             <thead>
@@ -209,7 +221,7 @@ export default function SubmissionDetailView({ data }) {
       {/* Validasi detail */}
       {validation?.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="card-header bg-slate-700">5. VALIDASI DETAIL</div>
+          <div className="card-header-portal">5. VALIDASI DETAIL</div>
           <div className="space-y-2 p-4">
             {validation.map((v) => (
               <div
@@ -235,7 +247,7 @@ export default function SubmissionDetailView({ data }) {
         <div className="grid gap-4 lg:grid-cols-2">
           {layoutPng && (
             <div className="card overflow-hidden">
-              <div className="card-header bg-slate-600">LAYOUT DESAIN</div>
+              <div className="card-header-portal">LAYOUT DESAIN</div>
               <div className="p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={layoutPng} alt="Layout desain" className="w-full rounded-lg ring-1 ring-slate-200" />
@@ -244,7 +256,7 @@ export default function SubmissionDetailView({ data }) {
           )}
           {schematicPng && (
             <div className="card overflow-hidden">
-              <div className="card-header bg-slate-600">SKEMA DIMENSI</div>
+              <div className="card-header-portal">SKEMA DIMENSI</div>
               <div className="p-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={schematicPng} alt="Skema dimensi" className="w-full rounded-lg ring-1 ring-slate-200" />
@@ -257,7 +269,7 @@ export default function SubmissionDetailView({ data }) {
       {/* Dimensi minimum */}
       {dims && (
         <div className="card overflow-hidden">
-          <div className="card-header bg-emerald-600">DIMENSI MINIMUM TERHITUNG</div>
+          <div className="card-header-portal">DIMENSI MINIMUM TERHITUNG</div>
           <div className="grid gap-0 p-4 sm:grid-cols-2">
             <InfoRow label="TLOF (min)" value={`${dims.tlof} m`} />
             <InfoRow label="FATO (min)" value={`${dims.fato} m`} />
@@ -270,7 +282,7 @@ export default function SubmissionDetailView({ data }) {
       {/* Rekomendasi */}
       {recs?.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="card-header bg-sky-700">REKOMENDASI</div>
+          <div className="card-header-portal">REKOMENDASI</div>
           <ul className="list-disc space-y-1 p-4 pl-8 text-sm text-slate-700">
             {recs.map((r, i) => (
               <li key={i}>{r}</li>
@@ -282,7 +294,7 @@ export default function SubmissionDetailView({ data }) {
       {/* Langkah perhitungan */}
       {steps?.length > 0 && (
         <div className="card overflow-hidden">
-          <div className="card-header bg-slate-600">LANGKAH PERHITUNGAN</div>
+          <div className="card-header-portal">LANGKAH PERHITUNGAN</div>
           <div className="space-y-3 p-4 text-xs">
             {steps.map((s, i) => (
               <div key={i} className="rounded-lg bg-slate-50 px-3 py-2 ring-1 ring-slate-100">

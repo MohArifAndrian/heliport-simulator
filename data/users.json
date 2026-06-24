@@ -1,0 +1,22 @@
+[
+  {
+    "id": "7b7a3fcb-2f9a-41cb-bc3d-8b9c9da2be57",
+    "email": "admin@heliport.id",
+    "passwordHash": "dba9c682628b23dc59cd53eb5cd44f7d035dc13471c0f5589c90502487c35e5f",
+    "nama": "Administrator",
+    "role": "admin",
+    "active": true,
+    "createdAt": "2026-06-24T14:33:43.738Z",
+    "updatedAt": "2026-06-24T14:33:43.738Z"
+  },
+  {
+    "id": "b599fd63-b493-4e58-9f91-751378ada387",
+    "email": "dosen@heliport.id",
+    "passwordHash": "223df9dcbc178990b0fe3e03fd03921cebba49fa7bf21ba968ca85906345bfaf",
+    "nama": "Dosen Pengampu",
+    "role": "dosen",
+    "active": true,
+    "createdAt": "2026-06-24T14:33:43.738Z",
+    "updatedAt": "2026-06-24T14:33:43.738Z"
+  }
+]

@@ -59,7 +59,7 @@ export const PALETTE_ITEMS = [
     label: "Approach/ Departure Path",
     icon: "approach",
     draggable: true,
-    hint: "Klik atau drag ke kanvas",
+    hint: "Klik atau drag ke kanvas — bisa diputar dengan handle rotasi",
   },
   {
     id: "windcone",
@@ -69,6 +69,22 @@ export const PALETTE_ITEMS = [
     colorIcon: true,
     draggable: true,
     hint: "Klik atau drag ke kanvas",
+  },
+  {
+    id: "imc",
+    type: "imc",
+    label: "IMC",
+    icon: "imc",
+    draggable: true,
+    hint: "Klik atau drag label IMC ke kanvas",
+  },
+  {
+    id: "vmc",
+    type: "vmc",
+    label: "VMC",
+    icon: "vmc",
+    draggable: true,
+    hint: "Klik atau drag label VMC ke kanvas",
   },
   {
     id: "marshaler",

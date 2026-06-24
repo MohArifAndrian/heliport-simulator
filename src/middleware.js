@@ -15,8 +15,13 @@ export async function middleware(request) {
 
   if (pathname.startsWith("/dosen")) {
     const token = request.cookies.get(DOSEN_COOKIE)?.value;
-    if (!(await verifyDosenSession(token))) {
+    const session = await verifyDosenSession(token);
+    if (!session) {
       return NextResponse.redirect(new URL("/dosen/login", request.url));
+    }
+
+    if (pathname.startsWith("/dosen/admin") && session.role !== "admin") {
+      return NextResponse.redirect(new URL("/dosen", request.url));
     }
   }
 

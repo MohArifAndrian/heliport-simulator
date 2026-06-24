@@ -3,6 +3,7 @@
 import { WIND_CONE_ICON_URL } from "@/lib/windconeArt";
 import { BUILDING_IMAGE_URL, TREE_IMAGE_URL } from "@/lib/obstacleArt";
 import { MARSHALER_IMAGE_URL } from "@/lib/marshalerArt";
+import { IMC_IMAGE_URL, VMC_IMAGE_URL } from "@/lib/weatherLabelArt";
 
 const ICON_SIZE = 28;
 
@@ -133,39 +134,29 @@ export function PalettePohonIcon() {
 
 export function PaletteImcIcon() {
   return (
-    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} aria-hidden>
-      <rect x="3" y="6" width="18" height="12" rx="2.5" fill="#ea580c" />
-      <text
-        x="12"
-        y="14"
-        textAnchor="middle"
-        fill="#fff"
-        fontSize="7.5"
-        fontWeight="900"
-        fontFamily="Arial, sans-serif"
-      >
-        IMC
-      </text>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={IMC_IMAGE_URL}
+      width={ICON_SIZE}
+      height={ICON_SIZE}
+      alt=""
+      draggable={false}
+      className="object-contain"
+    />
   );
 }
 
 export function PaletteVmcIcon() {
   return (
-    <svg viewBox="0 0 24 24" width={ICON_SIZE} height={ICON_SIZE} aria-hidden>
-      <rect x="3" y="6" width="18" height="12" rx="2.5" fill="#059669" />
-      <text
-        x="12"
-        y="14"
-        textAnchor="middle"
-        fill="#fff"
-        fontSize="7.5"
-        fontWeight="900"
-        fontFamily="Arial, sans-serif"
-      >
-        VMC
-      </text>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={VMC_IMAGE_URL}
+      width={ICON_SIZE}
+      height={ICON_SIZE}
+      alt=""
+      draggable={false}
+      className="object-contain"
+    />
   );
 }
 

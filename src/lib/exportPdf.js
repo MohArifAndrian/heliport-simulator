@@ -1,13 +1,13 @@
 import jsPDF from "jspdf";
 import { checkStatus } from "./calc";
 
-const BRAND = [31, 78, 156];
+const BRAND = [0, 64, 128];
 const MARGIN = 14;
 const LINE = 5.2;
 const PAGE_H = 297;
 const PAGE_W = 210;
 
-export function buildHeliportPdf(data) {
+export function createHeliportPdf(data) {
   const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
   const contentW = PAGE_W - MARGIN * 2;
   let y = MARGIN;
@@ -269,5 +269,13 @@ export function buildHeliportPdf(data) {
   addImage(data.layoutPng, "Layout 2D (Kanvas Desain)", 95);
   addImage(data.schematicPng, "Skema Layout Teknis (2D)", 95);
 
-  pdf.save("heliport-hasil.pdf");
+  return pdf;
+}
+
+export function buildHeliportPdf(data) {
+  createHeliportPdf(data).save("heliport-hasil.pdf");
+}
+
+export function getHeliportPdfBase64(data) {
+  return createHeliportPdf(data).output("base64");
 }

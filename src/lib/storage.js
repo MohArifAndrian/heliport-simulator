@@ -3,6 +3,7 @@ import path from "path";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const SUBMISSIONS_FILE = path.join(DATA_DIR, "submissions.json");
+const PDFS_DIR = path.join(DATA_DIR, "pdfs");
 
 async function ensureDataDir() {
   await fs.mkdir(DATA_DIR, { recursive: true });
@@ -38,4 +39,21 @@ export async function addSubmission(submission) {
   list.unshift(submission);
   await writeSubmissions(list);
   return submission;
+}
+
+export async function saveSubmissionPdf(id, base64) {
+  await fs.mkdir(PDFS_DIR, { recursive: true });
+  const buf = Buffer.from(base64, "base64");
+  const filePath = path.join(PDFS_DIR, `${id}.pdf`);
+  await fs.writeFile(filePath, buf);
+  return `pdfs/${id}.pdf`;
+}
+
+export async function readSubmissionPdf(id) {
+  const filePath = path.join(PDFS_DIR, `${id}.pdf`);
+  try {
+    return await fs.readFile(filePath);
+  } catch {
+    return null;
+  }
 }

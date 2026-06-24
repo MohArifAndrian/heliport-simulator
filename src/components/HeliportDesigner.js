@@ -26,7 +26,7 @@ import PaletteBar from "@/components/PaletteBar";
 import WindRose from "@/components/WindRose";
 import Preview2D from "@/components/Preview2D";
 import LayoutSchematic from "@/components/LayoutSchematic";
-import { buildHeliportPdf } from "@/lib/exportPdf";
+import { buildHeliportPdf, getHeliportPdfBase64 } from "@/lib/exportPdf";
 import { SIMULATOR_MODE } from "@/lib/simulatorMode";
 import TugasAssignmentPanel, { getTugasAnswers } from "@/components/TugasAssignmentPanel";
 import { checkTugasAnswers } from "@/lib/tugasDimensions";
@@ -137,17 +137,16 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
     a.click();
   }
 
-  function buildPdfReport(mhs) {
+  function buildReportData(mhs) {
     const heliName = helicopterName.trim() || "-";
     const windLabel =
       WIND_DIRECTIONS.find((w) => w.value === Number(lokasi?.arahAngin ?? 270))?.label ?? "-";
     const validationForPdf = resolveValidationForExport();
     const verdictForPdf = designVerdict(validationForPdf);
-
     const tugasAnswers = isTugasMode ? getTugasAnswers() : null;
     const tugasCheck = isTugasMode ? checkTugasAnswers(tugasAnswers, spec) : null;
 
-    buildHeliportPdf({
+    return {
       mahasiswa: mhs,
       heliName,
       spec,
@@ -164,11 +163,16 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
       mode,
       tugasAnswers,
       tugasCheck,
-    });
+    };
   }
 
-  async function submitToServer(mhs) {
-    const validationForSubmit = resolveValidationForExport();
+  function buildPdfReport(mhs) {
+    buildHeliportPdf(buildReportData(mhs));
+  }
+
+  async function submitToServer(mhs, reportData = null) {
+    const data = reportData ?? buildReportData(mhs);
+    const pdfBase64 = getHeliportPdfBase64(data);
     const payload = buildSubmissionPayload({
       mahasiswa: mhs,
       helicopterName,
@@ -177,9 +181,9 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
       dims,
       checks,
       tugasAnswers: getTugasAnswers(),
-      validation: validationForSubmit,
-      layoutPng: canvasRef.current?.exportDataURL?.(),
-      schematicPng: schematicRef.current?.captureSnapshot?.(),
+      validation: data.validation,
+      layoutPng: data.layoutPng,
+      schematicPng: data.schematicPng,
       mode,
       geo: canvasRef.current?.getGeometry?.(),
     });
@@ -187,7 +191,7 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
     const res = await fetch("/api/submissions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, pdfBase64 }),
     });
 
     if (!res.ok) {
@@ -207,8 +211,9 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
       setValidation(validationForPdf);
       setSubmitStatus("submitting");
       try {
-        await submitToServer(mahasiswa);
-        buildPdfReport(mahasiswa);
+        const reportData = buildReportData(mahasiswa);
+        await submitToServer(mahasiswa, reportData);
+        buildHeliportPdf(reportData);
         setSubmitStatus("success");
       } catch (err) {
         setSubmitStatus("error");
@@ -408,8 +413,9 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
               if (isTugasMode) {
                 setSubmitStatus("submitting");
                 try {
-                  await submitToServer(d);
-                  buildPdfReport(d);
+                  const reportData = buildReportData(d);
+                  await submitToServer(d, reportData);
+                  buildHeliportPdf(reportData);
                   setSubmitStatus("success");
                 } catch {
                   setSubmitStatus("error");

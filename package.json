@@ -6,22 +6,27 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "doctor": "react-doctor .",
+    "doctor:verbose": "react-doctor . --verbose",
+    "doctor:diff": "react-doctor . --scope changed"
   },
   "dependencies": {
-    "@iconify/react": "^6.0.2",
     "better-react-mathjax": "^2.0.3",
+    "chart.js": "^4.5.1",
     "fabric": "5.3.0",
     "html-to-image": "^1.11.11",
     "jspdf": "^2.5.1",
-    "next": "14.2.5",
+    "next": "15.5.18",
     "react": "^18.3.1",
+    "react-chartjs-2": "^5.3.1",
     "react-dom": "^18.3.1",
     "three": "^0.165.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.39",
+    "react-doctor": "^0.5.8",
     "tailwindcss": "^3.4.6"
   }
 }

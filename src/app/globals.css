@@ -1,30 +1,36 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --brand: #1f4e9c;
+  --brand: #004080;
+  --brand-dark: #003366;
+  --accent: #ffcc00;
+  --portal-surface: #f4f4f4;
 }
 
 html,
 body {
-  background: #eef2f7;
-  color: #1f2933;
+  background: var(--portal-surface);
+  color: #1a1a1a;
 }
 
 @layer components {
   .card {
-    @apply rounded-xl bg-white shadow-sm ring-1 ring-slate-200;
+    @apply rounded-lg bg-white shadow-portal ring-1 ring-slate-200/80;
   }
   .card-header {
-    @apply rounded-t-xl px-4 py-3 text-sm font-bold tracking-wide text-white;
+    @apply rounded-t-lg px-4 py-3 text-sm font-bold uppercase tracking-wide text-white;
+  }
+  .card-header-portal {
+    @apply card-header bg-brand-dark;
   }
   .field-label {
-    @apply mb-1 block text-xs font-medium text-slate-500;
+    @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500;
   }
   .field-input {
-    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20;
   }
   .btn {
     @apply inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition;
@@ -32,20 +38,69 @@ body {
   .btn-primary {
     @apply btn bg-brand text-white hover:bg-brand-dark;
   }
+  .btn-accent {
+    @apply btn bg-accent font-bold text-accent-foreground hover:bg-accent-dark;
+  }
   .btn-ghost {
     @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200;
   }
   .btn-success {
-    @apply btn bg-emerald-600 text-white hover:bg-emerald-700;
+    @apply btn bg-portal-lime text-brand-darker hover:opacity-90;
   }
   .btn-danger {
     @apply btn bg-red-600 text-white hover:bg-red-700;
   }
   .btn-dark {
-    @apply btn bg-slate-700 text-white hover:bg-slate-800;
+    @apply btn bg-brand-darker text-white hover:bg-brand-dark;
   }
   .btn-outline {
     @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  }
+
+  /* Portal layout */
+  .portal-page-title {
+    @apply text-2xl font-extrabold uppercase tracking-wide text-brand-dark;
+  }
+  .portal-page-subtitle {
+    @apply mt-1 text-sm text-slate-600;
+  }
+  .portal-stat-card {
+    @apply card border-l-4 border-brand p-4;
+  }
+  .portal-stat-value {
+    @apply mt-1 text-2xl font-extrabold text-brand;
+  }
+  .portal-sidebar {
+    @apply overflow-hidden rounded-lg bg-brand-dark text-white shadow-portal-lg;
+  }
+  .portal-sidebar-section {
+    @apply border-b border-white/10 px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-portal-cyan;
+  }
+  .portal-nav-link {
+    @apply flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white;
+  }
+  .portal-nav-link-active {
+    @apply border-l-4 border-accent bg-white/10 font-semibold text-white;
+  }
+  .portal-chart-card {
+    @apply rounded-lg bg-portal-chart p-4 text-white shadow-portal-lg;
+  }
+  .portal-chart-title {
+    @apply text-sm font-bold uppercase tracking-wide text-white;
+  }
+  .portal-chart-subtitle {
+    @apply text-xs text-slate-400;
+  }
+
+  /* FleetYu-style dashboard cards */
+  .dash-card {
+    @apply rounded-xl bg-white p-5 shadow-portal ring-1 ring-slate-100;
+  }
+  .dash-card-title {
+    @apply text-sm font-bold text-slate-900;
+  }
+  .dash-card-subtitle {
+    @apply text-xs text-slate-500;
   }
 }
 

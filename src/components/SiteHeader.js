@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useMahasiswa } from "@/lib/session";
-import { IconH } from "@/components/icons";
+import { SiteLogo } from "@/components/icons";
 
 export default function SiteHeader() {
   const { mahasiswa, save, clear } = useMahasiswa();
@@ -13,21 +13,26 @@ export default function SiteHeader() {
   const name = mahasiswa?.nama || "Mahasiswa";
 
   return (
-    <header className="relative z-40 bg-brand-dark text-white">
+    <header className="relative z-40 shadow-portal">
+      <div className="h-1 bg-accent" />
+      <div className="bg-brand-darker text-white">
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3">
         <Link href="/" className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-white/15">
-            <IconH className="text-white" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white p-0.5">
+            <SiteLogo size={32} className="h-full w-full" />
           </div>
           <div>
-            <h1 className="text-lg font-extrabold leading-none tracking-wide">
-              HELIPORT DESIGN SIMULATOR
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-portal-cyan">
+              Politeknik Penerbangan Indonesia
+            </p>
+            <h1 className="text-base font-extrabold uppercase leading-none tracking-wide sm:text-lg">
+              Heliport Design Simulator
             </h1>
-            <p className="text-[11px] text-sky-200">Versi Pemula</p>
+            <p className="text-[11px] text-white/70">Versi Pemula</p>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-2 text-sm text-sky-100 md:flex">
+        <nav className="hidden items-center gap-2 text-sm text-white/90 md:flex">
           <Link href="/latihan" className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3l9 4.5v9L12 21 3 16.5v-9L12 3z" /><path d="M12 12l9-4.5M12 12v9M12 12L3 7.5" /></svg>
             Latihan
@@ -47,10 +52,6 @@ export default function SiteHeader() {
           <Link href="/tentang" className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.7M12 17v.5" strokeLinecap="round" /></svg>
             Tentang
-          </Link>
-          <Link href="/dosen/login" className="flex items-center gap-1.5 rounded bg-white/10 px-2 py-1 hover:bg-white/20">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" strokeLinecap="round" /></svg>
-            Portal Dosen
           </Link>
           <div className="relative">
             <button onClick={() => setUserOpen((v) => !v)} className="flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10">
@@ -79,6 +80,7 @@ export default function SiteHeader() {
             )}
           </div>
         </nav>
+      </div>
       </div>
 
       {profileOpen && (

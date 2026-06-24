@@ -1,3 +1,34 @@
+export const LOGO_URL = "/logo-poltekbang.png";
+
+export function SiteLogo({ size = 36, className = "" }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={LOGO_URL}
+      alt="Logo Politeknik Penerbangan"
+      width={size}
+      height={size}
+      draggable={false}
+      className={`object-contain ${className}`}
+    />
+  );
+}
+
+/** Logo lebih besar untuk header portal dosen. */
+export function DosenLogo({ className = "" }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={LOGO_URL}
+      alt="Logo Politeknik Penerbangan"
+      width={48}
+      height={48}
+      draggable={false}
+      className={`h-12 w-12 object-contain ${className}`}
+    />
+  );
+}
+
 export const IconH = (p) => (
   <svg viewBox="0 0 24 24" width="20" height="20" {...p}>
     <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2" />

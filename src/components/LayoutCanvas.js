@@ -17,10 +17,8 @@ import {
   obstacleKindFromType,
 } from "@/lib/obstacleArt";
 import {
-  createWeatherLabel,
-  defaultWeatherPosition,
+  loadWeatherImage,
   isWeatherType,
-  WEATHER_TYPES,
 } from "@/lib/weatherLabelArt";
 import { loadMarshalerImage } from "@/lib/marshalerArt";
 import { computeAll } from "@/lib/calc";
@@ -283,13 +281,18 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     return Boolean(obj?.heliType || obj?.heliBase);
   }
 
-  function styleInteractiveObject(obj, { scalable = true } = {}) {
+  function isRotatableObject(obj) {
+    return obj?.heliType === "approach";
+  }
+
+  function styleInteractiveObject(obj, { scalable = true, rotatable } = {}) {
+    const canRotate = rotatable ?? isRotatableObject(obj);
     obj.set({
       selectable: true,
       evented: true,
       hasControls: true,
       hasBorders: true,
-      lockRotation: true,
+      lockRotation: !canRotate,
       lockScalingX: !scalable,
       lockScalingY: !scalable,
       cornerColor: "#1f4e9c",
@@ -302,7 +305,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
         mb: false,
         ml: false,
         mr: false,
-        mtr: false,
+        mtr: canRotate,
       });
     }
   }
@@ -317,43 +320,12 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     return { cx: w / 2, cy: h / 2 };
   }
 
-  function styleFixedWeatherLabel(obj) {
-    obj.set({
-      selectable: false,
-      evented: false,
-      hasControls: false,
-      hasBorders: false,
-      lockMovementX: true,
-      lockMovementY: true,
-    });
-  }
-
-  function syncWeatherLabels() {
-    const c = canvasRef.current;
-    if (!c || !fabric) return;
-    const s = scaleRef.current;
-
-    c.getObjects()
-      .filter((o) => isWeatherType(o.heliType))
-      .forEach((o) => c.remove(o));
-
-    WEATHER_TYPES.forEach((kind) => {
-      const obj = createWeatherLabel(fabric, kind, s);
-      obj.heliFixed = true;
-      styleFixedWeatherLabel(obj);
-      c.add(obj);
-      defaultWeatherPosition(c, obj, kind);
-    });
-    keepScaleOnTop();
-  }
-
   function drawGround() {
     const c = canvasRef.current;
     if (!c || !fabric) return;
     c.clear();
     c.backgroundColor = COLORS.ground;
     drawScaleBar();
-    syncWeatherLabels();
   }
 
   function resetCanvas() {
@@ -625,7 +597,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
           scaleX: o.scaleX,
           scaleY: o.scaleY,
         });
-      } else if (o.heliType && !isWeatherType(o.heliType)) {
+      } else if (o.heliType) {
         extras.push(o);
       }
     });
@@ -651,7 +623,6 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     });
 
     extras.forEach((o) => c.add(o));
-    syncWeatherLabels();
     keepScaleOnTop();
     c.requestRenderAll();
     notify();
@@ -968,11 +939,17 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       return;
     }
 
-    if (isWeatherType(item.type)) return;
-
     const placement = pos ?? defaultPlacementPos();
     const at = posToAt(placement);
     const s = scaleRef.current;
+
+    if (isWeatherType(item.type)) {
+      loadWeatherImage(fabric, item.type, s, (img) => {
+        if (!img || canvasRef.current !== c) return;
+        placeComponent(img, placement);
+      });
+      return;
+    }
 
     const syncObj = createComponentByPaletteId(id, at);
     if (syncObj) {
@@ -1039,6 +1016,10 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       });
       return;
     } else if (isWeatherType(type)) {
+      loadWeatherImage(fabric, type, s, (img) => {
+        if (!img || canvasRef.current !== c) return;
+        placeComponent(img, placement);
+      });
       return;
     } else if (type === "approach") {
       const lenPx = COMPONENT_M.approachLen * s;
@@ -1066,7 +1047,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     const c = canvasRef.current;
     if (!c) return;
     const active = c.getActiveObjects().filter(
-      (o) => (o.heliType || o.heliBase) && !o.heliFixed && !isWeatherType(o.heliType)
+      (o) => (o.heliType || o.heliBase) && !o.heliFixed
     );
     if (active.length === 0) return;
     active.forEach((o) => c.remove(o));
@@ -1080,7 +1061,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
     const c = canvasRef.current;
     if (!c) return;
     c.getObjects()
-      .filter((o) => (o.heliType || o.heliBase) && !o.heliFixed && !isWeatherType(o.heliType))
+      .filter((o) => (o.heliType || o.heliBase) && !o.heliFixed)
       .forEach((o) => c.remove(o));
     onSelectInfo?.(null);
     c.requestRenderAll();
@@ -1116,6 +1097,7 @@ const LayoutCanvas = forwardRef(function LayoutCanvas(
       c.on("selection:updated", handleSel);
       c.on("selection:cleared", () => onSelectInfo?.(null));
       c.on("object:scaling", (e) => emitInfo(e.target));
+      c.on("object:rotating", (e) => emitInfo(e.target));
       c.on("object:modified", (e) => emitInfo(e.target));
       c.on("object:moving", (e) => emitInfo(e.target));
 
