@@ -1,25 +1,35 @@
 /** Registry definitions for dosen data management sidebar. */
 
+import { DEFAULT_MAHASISWA_STATUS, MAHASISWA_STATUS_OPTIONS } from "@/lib/mahasiswaStatus";
+
 export const REGISTRY_TYPES = {
   mahasiswa: {
     label: "Data Mahasiswa",
     file: "mahasiswa.json",
-    path: "/dosen/mahasiswa",
+    path: "/dashboard/mahasiswa",
     description: "Daftar mahasiswa untuk referensi penilaian dan pengumpulan tugas.",
     fields: [
       { key: "nama", label: "Nama Lengkap", required: true, placeholder: "cth: Budi Santoso" },
+      {
+        key: "status",
+        label: "Status",
+        required: true,
+        type: "select",
+        options: MAHASISWA_STATUS_OPTIONS,
+        defaultValue: DEFAULT_MAHASISWA_STATUS,
+      },
       { key: "nim", label: "NIM", placeholder: "cth: 2110512345" },
       { key: "prodi", label: "Program Studi", placeholder: "cth: Teknik Penerbangan" },
       { key: "kelas", label: "Kelas", placeholder: "cth: A" },
       { key: "institusi", label: "Institusi", placeholder: "cth: Politeknik Penerbangan" },
     ],
-    searchKeys: ["nama", "nim", "prodi", "kelas", "institusi"],
-    tableColumns: ["nama", "nim", "prodi", "kelas", "institusi"],
+    searchKeys: ["nama", "status", "nim", "prodi", "kelas", "institusi"],
+    tableColumns: ["nama", "status", "nim", "prodi", "kelas", "institusi"],
   },
   "peserta-diklat": {
     label: "Peserta Diklat",
     file: "peserta-diklat.json",
-    path: "/dosen/peserta-diklat",
+    path: "/dashboard/peserta-diklat",
     description: "Daftar peserta diklat dan pelatihan terkait simulator heliport.",
     fields: [
       { key: "nama", label: "Nama Lengkap", required: true, placeholder: "cth: Andi Wijaya" },
@@ -37,7 +47,7 @@ export const REGISTRY_TYPES = {
   diklat: {
     label: "Kegiatan Diklat",
     file: "diklat.json",
-    path: "/dosen/diklat",
+    path: "/dashboard/diklat",
     description: "Data kegiatan diklat, periode pelaksanaan, dan keterangan.",
     fields: [
       { key: "nama", label: "Nama Diklat", required: true, placeholder: "cth: Diklat Desain Heliport" },

@@ -5,7 +5,7 @@ export const PORTAL_NAV = [
     section: "Penilaian",
     items: [
       {
-        href: "/dosen",
+        href: "/dashboard",
         label: "Dashboard Penilaian",
         shortLabel: "Penilaian",
         exact: true,
@@ -18,21 +18,21 @@ export const PORTAL_NAV = [
     section: "Data",
     items: [
       {
-        href: "/dosen/mahasiswa",
+        href: "/dashboard/mahasiswa",
         label: "Data Mahasiswa",
         shortLabel: "Mahasiswa",
         roles: [ROLES.ADMIN, ROLES.DOSEN],
         icon: "user",
       },
       {
-        href: "/dosen/peserta-diklat",
+        href: "/dashboard/peserta-diklat",
         label: "Peserta Diklat",
         shortLabel: "Peserta",
         roles: [ROLES.ADMIN, ROLES.DOSEN],
         icon: "users",
       },
       {
-        href: "/dosen/diklat",
+        href: "/dashboard/diklat",
         label: "Kegiatan Diklat",
         shortLabel: "Diklat",
         roles: [ROLES.ADMIN, ROLES.DOSEN],
@@ -44,21 +44,21 @@ export const PORTAL_NAV = [
     section: "Setting",
     items: [
       {
-        href: "/dosen/settings",
+        href: "/dashboard/settings",
         label: "Pengaturan Akun",
         shortLabel: "Akun",
         roles: [ROLES.ADMIN, ROLES.DOSEN],
         icon: "account",
       },
       {
-        href: "/dosen/admin/settings",
+        href: "/dashboard/admin/settings",
         label: "Setting Sistem",
         shortLabel: "Setting",
         roles: [ROLES.ADMIN],
         icon: "settings",
       },
       {
-        href: "/dosen/admin/users",
+        href: "/dashboard/admin/users",
         label: "Admin & Role",
         shortLabel: "Role",
         roles: [ROLES.ADMIN],

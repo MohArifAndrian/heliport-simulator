@@ -15,7 +15,7 @@ export default function DosenHeader() {
 
   async function handleLogout() {
     await fetch("/api/dosen/logout", { method: "POST" });
-    router.push("/dosen/login");
+    router.push("/login");
     router.refresh();
   }
 
@@ -24,7 +24,7 @@ export default function DosenHeader() {
       <div className="h-1 bg-accent" />
       <div className="bg-brand-darker text-white">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3">
-          <Link href="/dosen" className="flex items-center gap-3">
+          <Link href="/dashboard" className="flex items-center gap-3">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white p-1.5 shadow-sm">
               <DosenLogo className="h-full w-full" />
             </div>

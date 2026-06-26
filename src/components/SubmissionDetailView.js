@@ -78,7 +78,7 @@ export default function SubmissionDetailView({ data }) {
               Lihat PDF Laporan
             </a>
           )}
-          <Link href="/dosen" className="btn-outline text-sm">
+          <Link href="/dashboard" className="btn-outline text-sm">
             ← Kembali ke Daftar
           </Link>
         </div>
@@ -119,6 +119,7 @@ export default function SubmissionDetailView({ data }) {
         <div className="card-header-portal">1. DATA MAHASISWA</div>
         <div className="grid gap-0 p-4 sm:grid-cols-2">
           <InfoRow label="Nama" value={mahasiswa?.nama} />
+          <InfoRow label="Status" value={mahasiswa?.status || "Mahasiswa"} />
           <InfoRow label="NIM" value={mahasiswa?.nim} />
           <InfoRow label="Program Studi" value={mahasiswa?.prodi} />
           <InfoRow label="Kelas" value={mahasiswa?.kelas} />

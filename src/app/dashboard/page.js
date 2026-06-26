@@ -69,10 +69,11 @@ export default function DosenDashboardPage() {
 
   const handleExport = useCallback(() => {
     const rows = [
-      ["Waktu", "Nama", "NIM", "Kelas", "Prodi", "Helikopter", "Skor", "Layout", "PDF"],
+      ["Waktu", "Nama", "Status", "NIM", "Kelas", "Prodi", "Helikopter", "Skor", "Layout", "PDF"],
       ...filtered.map((s) => [
         new Date(s.submittedAt).toISOString(),
         s.mahasiswa?.nama || "",
+        s.mahasiswa?.status || "Mahasiswa",
         s.mahasiswa?.nim || "",
         s.mahasiswa?.kelas || "",
         s.mahasiswa?.prodi || "",
@@ -216,6 +217,7 @@ export default function DosenDashboardPage() {
                 <tr className="bg-slate-50 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   <th className="px-5 py-3">Waktu</th>
                   <th className="px-5 py-3">Mahasiswa</th>
+                  <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">NIM</th>
                   <th className="px-5 py-3">Kelas</th>
                   <th className="px-5 py-3">Helikopter</th>
@@ -232,6 +234,7 @@ export default function DosenDashboardPage() {
                       {formatDateTimeId(s.submittedAt)}
                     </td>
                     <td className="px-5 py-3 font-medium text-slate-800">{s.mahasiswa?.nama}</td>
+                    <td className="px-5 py-3 text-slate-600">{s.mahasiswa?.status || "Mahasiswa"}</td>
                     <td className="px-5 py-3 text-slate-600">{s.mahasiswa?.nim}</td>
                     <td className="px-5 py-3 text-slate-600">{s.mahasiswa?.kelas || "—"}</td>
                     <td className="px-5 py-3 text-slate-600">{s.heliName}</td>
@@ -257,7 +260,7 @@ export default function DosenDashboardPage() {
                     </td>
                     <td className="px-5 py-3">
                       <Link
-                        href={`/dosen/submissions/${s.id}`}
+                        href={`/dashboard/submissions/${s.id}`}
                         className="text-xs font-semibold text-brand hover:underline"
                       >
                         Detail →

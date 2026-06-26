@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DosenLogo } from "@/components/icons";
 
-export default function DosenLoginPage() {
+export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +28,7 @@ export default function DosenLoginPage() {
         setError(data.error || "Login gagal.");
         return;
       }
-      router.push("/dosen");
+      router.push("/dashboard");
       router.refresh();
     } catch {
       setError("Tidak dapat terhubung ke server.");

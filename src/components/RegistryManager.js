@@ -47,7 +47,8 @@ export default function RegistryManager({ type }) {
   function emptyForm() {
     const next = {};
     config.fields.forEach((field) => {
-      next[field.key] = "";
+      next[field.key] =
+        field.defaultValue ?? (field.options?.[0]?.value ?? "");
     });
     return next;
   }
@@ -232,6 +233,18 @@ export default function RegistryManager({ type }) {
                       placeholder={field.placeholder}
                       onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.value }))}
                     />
+                  ) : field.type === "select" && field.options ? (
+                    <select
+                      className="field-input"
+                      value={form[field.key] ?? ""}
+                      onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.value }))}
+                    >
+                      {field.options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <input
                       type={field.type || "text"}

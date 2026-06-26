@@ -129,6 +129,7 @@ export function createHeliportPdf(data) {
   heading("Data Mahasiswa");
   kvTable([
     ["Nama Lengkap", data.mahasiswa.nama],
+    ["Status", data.mahasiswa.status || "Mahasiswa"],
     ["NIM", data.mahasiswa.nim || "-"],
     ["Program Studi", data.mahasiswa.prodi || "-"],
     ["Kelas", data.mahasiswa.kelas || "-"],

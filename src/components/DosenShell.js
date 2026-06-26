@@ -1,17 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import DosenHeader from "@/components/DosenHeader";
 import DosenSidebar from "@/components/DosenSidebar";
 import { PortalSessionProvider } from "@/components/PortalSessionProvider";
 
 export default function DosenShell({ children }) {
-  const pathname = usePathname();
-
-  if (pathname === "/dosen/login") {
-    return children;
-  }
-
   return (
     <PortalSessionProvider>
       <div className="min-h-screen bg-[#f0f4f8]">

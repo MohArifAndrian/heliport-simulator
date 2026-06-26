@@ -1,6 +1,7 @@
 import { WIND_DIRECTIONS } from "@/lib/helicopters";
 import { computeSteps, recommendations, validateDesign, designVerdict } from "@/lib/calc";
 import { checkTugasAnswers } from "@/lib/tugasDimensions";
+import { DEFAULT_MAHASISWA_STATUS } from "@/lib/mahasiswaStatus";
 
 export function summarizeTugasCheck(tugasCheck) {
   if (!tugasCheck?.length) return { ok: 0, fail: 0, empty: 0, total: 0, score: 0 };
@@ -38,6 +39,7 @@ export function buildSubmissionPayload({
   return {
     mahasiswa: {
       nama: mahasiswa?.nama || "-",
+      status: mahasiswa?.status || DEFAULT_MAHASISWA_STATUS,
       nim: mahasiswa?.nim || "-",
       prodi: mahasiswa?.prodi || "-",
       kelas: mahasiswa?.kelas || "-",

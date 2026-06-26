@@ -7,11 +7,11 @@ import { usePortalSession } from "@/components/PortalSessionProvider";
 
 function isActive(pathname, href, exact) {
   if (exact) return pathname === href;
-  if (href === "/dosen/admin/settings") {
-    return pathname === href || pathname.startsWith("/dosen/admin/settings");
+  if (href === "/dashboard/admin/settings") {
+    return pathname === href || pathname.startsWith("/dashboard/admin/settings");
   }
-  if (href === "/dosen/settings") {
-    return pathname === "/dosen/settings";
+  if (href === "/dashboard/settings") {
+    return pathname === "/dashboard/settings";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

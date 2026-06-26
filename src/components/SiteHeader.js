@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { DEFAULT_MAHASISWA_STATUS, MAHASISWA_STATUS_OPTIONS } from "@/lib/mahasiswaStatus";
 import { useMahasiswa } from "@/lib/session";
 import { SiteLogo } from "@/components/icons";
 
@@ -64,7 +65,10 @@ export default function SiteHeader() {
                 {mahasiswa && (
                   <div className="border-b border-slate-100 px-4 py-2">
                     <p className="font-semibold text-slate-800">{mahasiswa.nama}</p>
-                    <p className="text-xs text-slate-500">NIM: {mahasiswa.nim || "-"}</p>
+                    <p className="text-xs text-slate-500">
+                      {mahasiswa.status || DEFAULT_MAHASISWA_STATUS}
+                      {mahasiswa.nim ? ` · NIM ${mahasiswa.nim}` : ""}
+                    </p>
                   </div>
                 )}
                 <button className="block w-full px-4 py-2 text-left hover:bg-slate-50" onClick={() => { setUserOpen(false); setProfileOpen(true); }}>
@@ -97,6 +101,7 @@ export default function SiteHeader() {
 export function MahasiswaModal({ initial, onClose, onSave, hint }) {
   const [form, setForm] = useState({
     nama: initial?.nama || "",
+    status: initial?.status || DEFAULT_MAHASISWA_STATUS,
     nim: initial?.nim || "",
     prodi: initial?.prodi || "",
     kelas: initial?.kelas || "",
@@ -122,6 +127,12 @@ export function MahasiswaModal({ initial, onClose, onSave, hint }) {
         )}
         <div className="space-y-3">
           <Field label="Nama Lengkap *" value={form.nama} onChange={(v) => set("nama", v)} placeholder="cth: Budi Santoso" />
+          <SelectField
+            label="Status *"
+            value={form.status}
+            onChange={(v) => set("status", v)}
+            options={MAHASISWA_STATUS_OPTIONS}
+          />
           <Field label="NIM" value={form.nim} onChange={(v) => set("nim", v)} placeholder="cth: 2110512345" />
           <Field label="Program Studi" value={form.prodi} onChange={(v) => set("prodi", v)} placeholder="cth: Teknik Penerbangan" />
           <Field label="Kelas" value={form.kelas} onChange={(v) => set("kelas", v)} placeholder="cth: A" />
@@ -144,6 +155,21 @@ function Field({ label, value, onChange, placeholder }) {
     <div>
       <label className="field-label">{label}</label>
       <input className="field-input" value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
+function SelectField({ label, value, onChange, options }) {
+  return (
+    <div>
+      <label className="field-label">{label}</label>
+      <select className="field-input" value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

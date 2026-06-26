@@ -135,7 +135,7 @@ export default function AdminSettingsPanel() {
       <div className="card overflow-hidden">
         <div className="card-header-portal flex items-center justify-between">
           <span>PERAN & HAK AKSES</span>
-          <Link href="/dosen/admin/users" className="text-xs font-normal text-accent hover:underline">
+          <Link href="/dashboard/admin/users" className="text-xs font-normal text-accent hover:underline">
             Kelola Admin & Role →
           </Link>
         </div>
@@ -187,7 +187,7 @@ export default function AdminSettingsPanel() {
               Tambah, edit, atau hapus akun admin dan dosen beserta role-nya.
             </p>
           </div>
-          <Link href="/dosen/admin/users" className="btn-primary">
+          <Link href="/dashboard/admin/users" className="btn-primary">
             Buka Admin & Role
           </Link>
         </div>

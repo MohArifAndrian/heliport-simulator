@@ -405,7 +405,7 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
         {pdfProfileOpen && (
           <MahasiswaModal
             initial={mahasiswa}
-            hint="Data mahasiswa wajib diisi sebelum export PDF. Nama lengkap harus diisi."
+            hint="Data mahasiswa wajib diisi sebelum export PDF. Nama lengkap dan status harus diisi."
             onClose={() => setPdfProfileOpen(false)}
             onSave={async (d) => {
               save(d);
@@ -810,6 +810,7 @@ function DetailedResults({
       {mahasiswa?.nama && (
         <p className="mt-1 text-xs text-slate-500">
           Oleh: <b>{mahasiswa.nama}</b>
+          {mahasiswa.status ? ` · ${mahasiswa.status}` : ""}
           {mahasiswa.nim ? ` · NIM ${mahasiswa.nim}` : ""}
           {mahasiswa.prodi ? ` · ${mahasiswa.prodi}` : ""}
         </p>

@@ -319,7 +319,7 @@ function RecentSubmissionsPanel({ submissions, total }) {
                   </td>
                   <td className="px-4 py-3">
                     <Link
-                      href={`/dosen/submissions/${s.id}`}
+                      href={`/dashboard/submissions/${s.id}`}
                       className="text-xs font-semibold text-brand hover:underline"
                     >
                       Detail →
