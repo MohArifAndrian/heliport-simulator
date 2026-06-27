@@ -51,6 +51,7 @@ export default function SubmissionDetailView({ data }) {
     recs,
     layoutPng,
     schematicPng,
+    tugasSchematicPng,
     submittedAt,
     id,
     pdfFile,
@@ -116,7 +117,7 @@ export default function SubmissionDetailView({ data }) {
 
       {/* Data Mahasiswa */}
       <div className="card overflow-hidden">
-        <div className="card-header-portal">1. DATA MAHASISWA</div>
+        <div className="card-header-portal">1. DATA PESERTA</div>
         <div className="grid gap-0 p-4 sm:grid-cols-2">
           <InfoRow label="Nama" value={mahasiswa?.nama} />
           <InfoRow label="Status" value={mahasiswa?.status || "Mahasiswa"} />
@@ -244,8 +245,21 @@ export default function SubmissionDetailView({ data }) {
       )}
 
       {/* Gambar */}
-      {(layoutPng || schematicPng) && (
+      {(layoutPng || schematicPng || tugasSchematicPng) && (
         <div className="grid gap-4 lg:grid-cols-2">
+          {tugasSchematicPng && (
+            <div className="card overflow-hidden lg:col-span-2">
+              <div className="card-header-portal">DIAGRAM TUGAS A–O & JAWABAN</div>
+              <div className="p-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={tugasSchematicPng}
+                  alt="Diagram tugas dimensi A-O"
+                  className="mx-auto max-w-full rounded-lg ring-1 ring-slate-200"
+                />
+              </div>
+            </div>
+          )}
           {layoutPng && (
             <div className="card overflow-hidden">
               <div className="card-header-portal">LAYOUT DESAIN</div>

@@ -1,5 +1,6 @@
-import HeliportDesigner from "@/components/HeliportDesigner";
-import { SIMULATOR_MODE } from "@/lib/simulatorMode";
+import TugasApp from "@/components/TugasApp";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Mode Tugas - Heliport Design Simulator",
@@ -7,5 +8,5 @@ export const metadata = {
 };
 
 export default function TugasPage() {
-  return <HeliportDesigner mode={SIMULATOR_MODE.TUGAS} />;
+  return <TugasApp />;
 }

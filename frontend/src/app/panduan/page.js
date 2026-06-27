@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import TugasModeEntry from "@/components/TugasModeEntry";
 
 export const metadata = { title: "Panduan - Heliport Design Simulator" };
 
@@ -83,7 +84,7 @@ export default function PanduanPage() {
 
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/latihan" className="btn-primary">Mulai Mode Latihan</Link>
-          <Link href="/tugas" className="btn-ghost">Mulai Mode Tugas</Link>
+          <TugasModeEntry className="btn-ghost">Mulai Mode Tugas</TugasModeEntry>
         </div>
       </main>
       <SiteFooter />

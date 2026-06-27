@@ -10,7 +10,7 @@ export const PERMISSIONS = [
   {
     id: "submissions-detail",
     label: "Detail Penilaian",
-    description: "Lihat detail tugas mahasiswa dan unduh PDF",
+    description: "Lihat detail tugas peserta dan unduh PDF",
     roles: [ROLES.ADMIN, ROLES.DOSEN],
   },
   {

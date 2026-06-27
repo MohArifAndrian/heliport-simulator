@@ -1,0 +1,16 @@
+[
+  {
+    "id": "52beeb32-dd8c-4349-90b5-a0c3e8d9a966",
+    "nama": "Peserta Demo",
+    "status": "Mahasiswa",
+    "nim": "2110512345",
+    "email": "peserta.demo@poltekbang.id",
+    "prodi": "Teknik Penerbangan",
+    "kelas": "A",
+    "institusi": "Politeknik Penerbangan Indonesia",
+    "passwordHash": "b8e2ac132861ec4b2c0612618ed122ebcc41c8e8dfd23f604428d1d6285aef81",
+    "active": true,
+    "createdAt": "2026-06-27T07:30:19.873Z",
+    "updatedAt": "2026-06-27T07:30:19.873Z"
+  }
+]

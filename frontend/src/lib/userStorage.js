@@ -12,6 +12,8 @@ function hashPassword(password) {
   return crypto.createHash("sha256").update(`${SECRET}:${password}`).digest("hex");
 }
 
+export { hashPassword };
+
 function defaultUsers() {
   const now = new Date().toISOString();
   return [

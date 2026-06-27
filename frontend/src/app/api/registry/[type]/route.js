@@ -1,6 +1,7 @@
 import { isValidRegistryType, getRegistryConfig } from "@/lib/registryConfig";
 import { getAllRegistryItems, addRegistryItem } from "@/lib/registryStorage";
 import { requireDosen } from "@/lib/requireDosen";
+import { prepareRegistryData, sanitizeRegistryItem } from "@/lib/registryPassword";
 
 function pickFields(body, config) {
   const data = {};
@@ -30,7 +31,7 @@ export async function GET(_request, { params }) {
   }
 
   const items = await getAllRegistryItems(params.type);
-  return Response.json({ items });
+  return Response.json({ items: items.map(sanitizeRegistryItem) });
 }
 
 export async function POST(request, { params }) {
@@ -50,6 +51,7 @@ export async function POST(request, { params }) {
     return Response.json({ error }, { status: 400 });
   }
 
-  const item = await addRegistryItem(params.type, data);
-  return Response.json({ ok: true, item });
+  const stored = prepareRegistryData(data);
+  const item = await addRegistryItem(params.type, stored);
+  return Response.json({ ok: true, item: sanitizeRegistryItem(item) });
 }

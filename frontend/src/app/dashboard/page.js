@@ -102,7 +102,7 @@ export default function DosenDashboardPage() {
             Dashboard Penilaian
           </h2>
           <p className="mt-0.5 text-sm text-slate-500">
-            Monitor performa pengumpulan tugas mahasiswa
+            Monitor performa pengumpulan tugas peserta
           </p>
         </div>
         <button
@@ -207,7 +207,7 @@ export default function DosenDashboardPage() {
           <div className="p-8 text-center">
             <p className="text-sm text-slate-500">Belum ada pengumpulan tugas.</p>
             <p className="mt-2 text-xs text-slate-400">
-              Mahasiswa mengirim hasil melalui tombol &quot;Submit Tugas&quot; di Mode Tugas.
+              Peserta mengirim hasil melalui tombol &quot;Submit Tugas&quot; di Mode Tugas.
             </p>
           </div>
         ) : (
@@ -216,7 +216,7 @@ export default function DosenDashboardPage() {
               <thead>
                 <tr className="bg-slate-50 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                   <th className="px-5 py-3">Waktu</th>
-                  <th className="px-5 py-3">Mahasiswa</th>
+                  <th className="px-5 py-3">Peserta</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3">NIM</th>
                   <th className="px-5 py-3">Kelas</th>

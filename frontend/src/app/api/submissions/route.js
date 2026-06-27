@@ -34,7 +34,7 @@ export async function POST(request) {
   const { pdfBase64, ...rest } = body;
 
   if (!rest.mahasiswa?.nama?.trim()) {
-    return Response.json({ error: "Data mahasiswa wajib diisi." }, { status: 400 });
+    return Response.json({ error: "Data peserta wajib diisi." }, { status: 400 });
   }
 
   const id = randomUUID();

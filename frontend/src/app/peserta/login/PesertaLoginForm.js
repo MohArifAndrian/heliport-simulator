@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { DosenLogo } from "@/components/icons";
+import { SiteLogo } from "@/components/icons";
 
-export default function LoginPage() {
+export default function PesertaLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/tugas";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,7 +21,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/dosen/login", {
+      const res = await fetch("/api/peserta/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -28,7 +31,8 @@ export default function LoginPage() {
         setError(data.error || "Login gagal.");
         return;
       }
-      router.push("/dashboard");
+      window.dispatchEvent(new Event("peserta-changed"));
+      router.push(next);
       router.refresh();
     } catch {
       setError("Tidak dapat terhubung ke server.");
@@ -42,15 +46,15 @@ export default function LoginPage() {
       <div className="h-1 bg-accent" />
       <div className="bg-brand-darker px-4 py-8 text-center text-white">
         <Link href="/" className="inline-flex flex-col items-center gap-3">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl bg-white p-2 shadow-portal-lg">
-            <DosenLogo className="h-full w-full" />
+          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl bg-white p-2 shadow-portal-lg">
+            <SiteLogo size={56} className="h-full w-full" />
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-widest text-portal-cyan">
               Politeknik Penerbangan Indonesia
             </p>
             <h1 className="mt-1 text-xl font-extrabold uppercase tracking-wide sm:text-2xl">
-              Portal Admin
+              Login Peserta
             </h1>
             <p className="mt-1 text-sm text-white/70">Heliport Design Simulator</p>
           </div>
@@ -61,7 +65,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="card p-6 shadow-portal-lg">
           <h2 className="mb-1 text-lg font-extrabold uppercase tracking-wide text-brand-dark">Masuk</h2>
           <p className="mb-5 text-sm text-slate-600">
-            Admin atau Dosen — akses dashboard admin Mode Tugas.
+            Masukkan email dan kata sandi yang diberikan dosen.
           </p>
 
           {error && (
@@ -76,7 +80,7 @@ export default function LoginPage() {
             className="field-input mb-4"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="admin@heliport.id atau dosen@heliport.id"
+            placeholder="cth: nama@poltekbang.id"
             required
             autoComplete="username"
           />
@@ -95,13 +99,13 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-accent w-full justify-center disabled:opacity-60"
+            className="btn-primary w-full justify-center disabled:opacity-60"
           >
-            {loading ? "Memproses…" : "Masuk ke Dashboard"}
+            {loading ? "Memproses…" : "Masuk sebagai Peserta"}
           </button>
 
-          <p className="mt-4 text-center text-xs text-slate-500">
-            Hanya admin dan dosen yang dapat mengakses portal admin.
+          <p className="mt-4 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-800 ring-1 ring-sky-100">
+            Akun demo: <b>peserta.demo@poltekbang.id</b> · sandi <b>peserta123</b>
           </p>
         </form>
 

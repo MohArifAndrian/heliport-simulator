@@ -141,6 +141,64 @@ export function emptyTugasAnswers() {
   return Object.fromEntries(TUGAS_LETTERS.map((l) => [l, ""]));
 }
 
+export function hasFilledTugasAnswers(answers) {
+  if (!answers) return false;
+  return TUGAS_LETTERS.some((letter) => {
+    const value = answers[letter];
+    return value !== "" && value != null && String(value).trim() !== "";
+  });
+}
+
+export function isAllTugasAnswersFilled(answers) {
+  if (!answers) return false;
+  return TUGAS_LETTERS.every((letter) => parseTugasAnswer(answers[letter]) != null);
+}
+
+function isPositiveSpecValue(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0;
+}
+
+export function isHeliInputComplete(helicopterName, spec) {
+  if (!helicopterName?.trim()) return false;
+  if (!isPositiveSpecValue(spec?.D)) return false;
+  if (!isPositiveSpecValue(spec?.OL)) return false;
+  if (!isPositiveSpecValue(spec?.UCW)) return false;
+  if (!isPositiveSpecValue(spec?.MTOM)) return false;
+  if (spec?.vmc === "" || spec?.vmc == null) return false;
+  return true;
+}
+
+export function isCanvasLayoutComplete(present) {
+  return (
+    present.includes("tlof") &&
+    present.includes("fato") &&
+    present.includes("safety")
+  );
+}
+
+/** Cek kesiapan submit Mode Tugas — input helikopter, kanvas, dan jawaban A–O. */
+export function getTugasSubmitReadiness({ helicopterName, spec, present, tugasAnswers }) {
+  const missing = [];
+
+  if (!helicopterName?.trim()) missing.push("nama/tipe helikopter");
+  if (!isPositiveSpecValue(spec?.D)) missing.push("rotor diameter (D)");
+  if (!isPositiveSpecValue(spec?.OL)) missing.push("overall length (OL)");
+  if (!isPositiveSpecValue(spec?.UCW)) missing.push("undercarriage width (UCW)");
+  if (!isPositiveSpecValue(spec?.MTOM)) missing.push("MTOM");
+  if (spec?.vmc === "" || spec?.vmc == null) missing.push("performance class (VMC)");
+
+  if (!isCanvasLayoutComplete(present)) {
+    missing.push("layout kanvas (TLOF, FATO, Safety Area)");
+  }
+
+  if (!isAllTugasAnswersFilled(tugasAnswers)) {
+    missing.push("semua dimensi huruf A–O");
+  }
+
+  return { ready: missing.length === 0, missing };
+}
+
 export function parseTugasAnswer(value) {
   if (value === "" || value == null) return null;
   const n = Number(String(value).replace(",", "."));

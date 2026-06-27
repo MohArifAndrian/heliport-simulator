@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import { checkStatus } from "./calc";
+import { hasFilledTugasAnswers } from "./tugasDimensions";
 
 const BRAND = [0, 64, 128];
 const MARGIN = 14;
@@ -126,7 +127,7 @@ export function createHeliportPdf(data) {
   pdf.setTextColor(0, 0, 0);
   y = data.mode === "tugas" ? 46 : 42;
 
-  heading("Data Mahasiswa");
+  heading("Data Peserta");
   kvTable([
     ["Nama Lengkap", data.mahasiswa.nama],
     ["Status", data.mahasiswa.status || "Mahasiswa"],
@@ -175,8 +176,19 @@ export function createHeliportPdf(data) {
     ["Total Extent (FATO + 2×Safety)", `${data.dims.overall} m`],
   ]);
 
-  if (data.mode === "tugas" && data.tugasCheck?.length) {
-    heading("3a. Jawaban Dimensi Huruf (A–O)");
+  if (data.mode === "tugas" && hasFilledTugasAnswers(data.tugasAnswers)) {
+    heading("3a. Tugas Dimensi Huruf (A–O) — KP 215");
+    if (data.tugasSummary) {
+      para(
+        `Skor: ${data.tugasSummary.score}% · ${data.tugasSummary.ok} benar · ${data.tugasSummary.fail} salah · ${data.tugasSummary.empty} kosong`,
+        9
+      );
+    }
+    addImage(data.tugasSchematicPng, "Diagram Tugas & Jawaban Peserta", 110);
+  }
+
+  if (data.mode === "tugas" && data.tugasCheck?.length && hasFilledTugasAnswers(data.tugasAnswers)) {
+    heading("3b. Penilaian Jawaban Dimensi (A–O)");
     drawTableHeader(["Huruf", "Dimensi", "Jawaban", "Kunci", "Status"], [0.08, 0.34, 0.18, 0.18, 0.22]);
     data.tugasCheck.forEach((row) => {
       const jawaban = row.entered != null ? `${row.entered} m` : "-";

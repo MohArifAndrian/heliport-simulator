@@ -5,6 +5,7 @@ import {
   deleteRegistryItem,
 } from "@/lib/registryStorage";
 import { requireDosen } from "@/lib/requireDosen";
+import { prepareRegistryData, sanitizeRegistryItem } from "@/lib/registryPassword";
 
 function pickFields(body, config) {
   const data = {};
@@ -38,7 +39,7 @@ export async function GET(_request, { params }) {
     return Response.json({ error: "Data tidak ditemukan." }, { status: 404 });
   }
 
-  return Response.json({ item });
+  return Response.json({ item: sanitizeRegistryItem(item) });
 }
 
 export async function PUT(request, { params }) {
@@ -51,6 +52,11 @@ export async function PUT(request, { params }) {
     return Response.json({ error: "Jenis data tidak dikenal." }, { status: 404 });
   }
 
+  const existing = await getRegistryItemById(params.type, params.id);
+  if (!existing) {
+    return Response.json({ error: "Data tidak ditemukan." }, { status: 404 });
+  }
+
   const body = await request.json();
   const data = pickFields(body, config);
   const error = validateRequired(data, config);
@@ -58,12 +64,9 @@ export async function PUT(request, { params }) {
     return Response.json({ error }, { status: 400 });
   }
 
-  const item = await updateRegistryItem(params.type, params.id, data);
-  if (!item) {
-    return Response.json({ error: "Data tidak ditemukan." }, { status: 404 });
-  }
-
-  return Response.json({ ok: true, item });
+  const stored = prepareRegistryData(data, existing);
+  const item = await updateRegistryItem(params.type, params.id, stored);
+  return Response.json({ ok: true, item: sanitizeRegistryItem(item) });
 }
 
 export async function DELETE(_request, { params }) {

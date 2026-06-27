@@ -24,6 +24,7 @@ export function buildSubmissionPayload({
   validation,
   layoutPng,
   schematicPng,
+  tugasSchematicPng,
   mode,
   geo,
 }) {
@@ -60,6 +61,7 @@ export function buildSubmissionPayload({
     recs: recommendations(spec, lokasi, validationResult),
     layoutPng: layoutPng || null,
     schematicPng: schematicPng || null,
+    tugasSchematicPng: tugasSchematicPng || null,
     mode: mode || "tugas",
   };
 }

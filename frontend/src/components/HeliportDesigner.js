@@ -19,7 +19,7 @@ import {
   IconCheck,
   IconWarn,
 } from "@/components/icons";
-import SiteHeader, { MahasiswaModal } from "@/components/SiteHeader";
+import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { isMahasiswaComplete, useMahasiswa } from "@/lib/session";
 import PaletteBar from "@/components/PaletteBar";
@@ -29,9 +29,12 @@ import LayoutSchematic from "@/components/LayoutSchematic";
 import { buildHeliportPdf, getHeliportPdfBase64 } from "@/lib/exportPdf";
 import { SIMULATOR_MODE } from "@/lib/simulatorMode";
 import TugasAssignmentPanel, { getTugasAnswers } from "@/components/TugasAssignmentPanel";
-import { checkTugasAnswers } from "@/lib/tugasDimensions";
-import { buildSubmissionPayload } from "@/lib/buildSubmissionPayload";
+import { checkTugasAnswers, getTugasSubmitReadiness, hasFilledTugasAnswers } from "@/lib/tugasDimensions";
+import { renderTugasSchematicPng } from "@/lib/tugasSchematicDraw";
+import { buildSubmissionPayload, summarizeTugasCheck } from "@/lib/buildSubmissionPayload";
+import TugasModeEntry from "@/components/TugasModeEntry";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 
 const LayoutCanvas = dynamic(() => import("@/components/LayoutCanvas"), {
   ssr: false,
@@ -58,14 +61,17 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
   const [validation, setValidation] = useState(null); // array of checks or null
   const [dimHitung, setDimHitung] = useState(false);
   const isTugasMode = mode === SIMULATOR_MODE.TUGAS;
-  const { mahasiswa, save } = useMahasiswa();
-  const [pdfProfileOpen, setPdfProfileOpen] = useState(false);
+  const { mahasiswa } = useMahasiswa();
+  const router = useRouter();
+  const pathname = usePathname();
   const [submitStatus, setSubmitStatus] = useState(null);
+  const [tugasAnswers, setTugasAnswers] = useState(() => getTugasAnswers());
 
   const canvasRef = useRef(null);
   const pendingPaletteRef = useRef([]);
   const resultRef = useRef(null);
   const schematicRef = useRef(null);
+  const tugasSchematicRef = useRef(null);
 
   const flushPendingPalette = useCallback(() => {
     const pending = pendingPaletteRef.current.splice(0);
@@ -145,6 +151,12 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
     const verdictForPdf = designVerdict(validationForPdf);
     const tugasAnswers = isTugasMode ? getTugasAnswers() : null;
     const tugasCheck = isTugasMode ? checkTugasAnswers(tugasAnswers, spec) : null;
+    const tugasSummary = isTugasMode ? summarizeTugasCheck(tugasCheck) : null;
+    const tugasSchematicPng =
+      isTugasMode && hasFilledTugasAnswers(tugasAnswers)
+        ? tugasSchematicRef.current?.captureSnapshot?.(tugasAnswers) ??
+          renderTugasSchematicPng(tugasAnswers)
+        : null;
 
     return {
       mahasiswa: mhs,
@@ -160,9 +172,11 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
       recs: recommendations(spec, lokasi, validationForPdf),
       layoutPng: canvasRef.current?.exportDataURL?.(),
       schematicPng: schematicRef.current?.captureSnapshot?.(),
+      tugasSchematicPng,
       mode,
       tugasAnswers,
       tugasCheck,
+      tugasSummary,
     };
   }
 
@@ -184,6 +198,7 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
       validation: data.validation,
       layoutPng: data.layoutPng,
       schematicPng: data.schematicPng,
+      tugasSchematicPng: data.tugasSchematicPng,
       mode,
       geo: canvasRef.current?.getGeometry?.(),
     });
@@ -203,10 +218,11 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
 
   async function exportPDF() {
     if (!isMahasiswaComplete(mahasiswa)) {
-      setPdfProfileOpen(true);
+      router.push(`/peserta/login?next=${encodeURIComponent(pathname || "/tugas")}`);
       return;
     }
     if (isTugasMode) {
+      if (!tugasSubmitReadiness.ready) return;
       const validationForPdf = resolveValidationForExport();
       setValidation(validationForPdf);
       setSubmitStatus("submitting");
@@ -232,6 +248,16 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
     present.includes("fato") &&
     present.includes("safety");
 
+  const tugasSubmitReadiness = useMemo(
+    () =>
+      isTugasMode
+        ? getTugasSubmitReadiness({ helicopterName, spec, present, tugasAnswers })
+        : { ready: true, missing: [] },
+    [isTugasMode, helicopterName, spec, present, tugasAnswers]
+  );
+
+  const canSubmitTugas = tugasSubmitReadiness.ready && submitStatus !== "submitting";
+
   return (
     <div className="min-h-screen">
       <SiteHeader />
@@ -246,12 +272,15 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
           >
             {isTugasMode ? "Mode Tugas" : "Mode Latihan"}
           </span>
-          <Link
-            href={isTugasMode ? "/latihan" : "/tugas"}
-            className="text-xs font-semibold text-brand hover:underline"
-          >
-            {isTugasMode ? "Beralih ke Mode Latihan →" : "Beralih ke Mode Tugas →"}
-          </Link>
+          {isTugasMode ? (
+            <Link href="/latihan" className="text-xs font-semibold text-brand hover:underline">
+              Beralih ke Mode Latihan →
+            </Link>
+          ) : (
+            <TugasModeEntry className="text-xs font-semibold text-brand hover:underline">
+              Beralih ke Mode Tugas →
+            </TugasModeEntry>
+          )}
         </div>
       </div>
       <Stepper step={activeStep} setStep={setStep} steps={visibleSteps} isTugasMode={isTugasMode} />
@@ -290,9 +319,6 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
                 lokasi={lokasi}
                 setLokasi={setLokasi}
               />
-              {!isTugasMode && (
-                <MinDimPanel dims={dims} highlight={dimHitung} onHitung={hitungDimensi} />
-              )}
             </section>
 
             {/* CENTER */}
@@ -334,9 +360,14 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
                       </button>
                       {isTugasMode ? (
                         <button
-                          className="btn-primary"
+                          className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
                           onClick={exportPDF}
-                          disabled={submitStatus === "submitting"}
+                          disabled={!canSubmitTugas}
+                          title={
+                            !tugasSubmitReadiness.ready
+                              ? `Lengkapi: ${tugasSubmitReadiness.missing.join(", ")}`
+                              : undefined
+                          }
                         >
                           {submitStatus === "submitting" ? "Mengirim…" : "Submit Tugas"} <IconArrow />
                         </button>
@@ -347,6 +378,12 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
                       )}
                     </div>
                   </div>
+                  {isTugasMode && !tugasSubmitReadiness.ready && (
+                    <p className="mt-3 text-xs text-amber-800">
+                      <b>Submit belum aktif.</b> Lengkapi:{" "}
+                      {tugasSubmitReadiness.missing.join(" · ")}.
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
@@ -354,6 +391,7 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
             {/* RIGHT — hanya Mode Latihan */}
             {!isTugasMode && (
               <section className="space-y-4 lg:col-span-3">
+                <MinDimPanel dims={dims} highlight={dimHitung} onHitung={hitungDimensi} />
                 <ResultsPanel checks={checks} />
                 <DesignCheckPanel
                   validation={validation}
@@ -366,7 +404,11 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
 
           {isTugasMode && (
             <div className="mt-6">
-              <TugasAssignmentPanel spec={spec} />
+              <TugasAssignmentPanel
+                spec={spec}
+                schematicRef={tugasSchematicRef}
+                onAnswersChange={setTugasAnswers}
+              />
             </div>
           )}
 
@@ -401,31 +443,6 @@ export default function HeliportDesigner({ mode = SIMULATOR_MODE.LATIHAN }) {
         </main>
 
         <SiteFooter />
-
-        {pdfProfileOpen && (
-          <MahasiswaModal
-            initial={mahasiswa}
-            hint="Data mahasiswa wajib diisi sebelum export PDF. Nama lengkap dan status harus diisi."
-            onClose={() => setPdfProfileOpen(false)}
-            onSave={async (d) => {
-              save(d);
-              setPdfProfileOpen(false);
-              if (isTugasMode) {
-                setSubmitStatus("submitting");
-                try {
-                  const reportData = buildReportData(d);
-                  await submitToServer(d, reportData);
-                  buildHeliportPdf(reportData);
-                  setSubmitStatus("success");
-                } catch {
-                  setSubmitStatus("error");
-                }
-              } else {
-                buildPdfReport(d);
-              }
-            }}
-          />
-        )}
       </div>
   );
 }
@@ -487,7 +504,7 @@ function InputPanel({ helicopterName, onHelicopterNameChange, spec, field }) {
     <div className="card overflow-hidden">
       <div className="card-header bg-brand">1. INPUT DATA HELIKOPTER</div>
       <div className="space-y-3 p-4">
-        <p className="text-xs text-slate-500">Mahasiswa mengisi data helikopter secara mandiri.</p>
+        <p className="text-xs text-slate-500">Peserta mengisi data helikopter secara mandiri.</p>
 
         <TextField
           label="Nama/Tipe Helikopter"

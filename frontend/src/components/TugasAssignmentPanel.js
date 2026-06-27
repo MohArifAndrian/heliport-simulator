@@ -30,7 +30,7 @@ export function getTugasAnswers() {
   return loadAnswers();
 }
 
-export default function TugasAssignmentPanel({ spec, onAnswersChange }) {
+export default function TugasAssignmentPanel({ spec, schematicRef, onAnswersChange }) {
   const [answers, setAnswers] = useState(emptyTugasAnswers);
 
   useEffect(() => {
@@ -56,13 +56,13 @@ export default function TugasAssignmentPanel({ spec, onAnswersChange }) {
       <div className="card-header bg-amber-600">MODE TUGAS — TENTUKAN DIMENSI (A–O)</div>
       <div className="p-4">
         <p className="mb-4 text-xs text-amber-900">
-          <b>Tiap ukuran yang diminta dibuat huruf saja. Nanti mahasiswa yang isi.</b>
+          <b>Tiap ukuran yang diminta dibuat huruf saja. Nanti peserta yang isi.</b>
         </p>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_180px] lg:items-start">
           <div className="min-w-0">
             <div className="flex justify-center overflow-x-auto rounded-lg border border-[#3d5a25] bg-[#3d5a25] p-4">
-              <TugasSchematicCanvas />
+              <TugasSchematicCanvas ref={schematicRef} answers={answers} />
             </div>
             <div className="mt-3 rounded border border-red-300 bg-white px-4 py-3 text-[11px] leading-relaxed text-slate-700">
               <p>

@@ -290,7 +290,7 @@ function RecentSubmissionsPanel({ submissions, total }) {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="bg-slate-50 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-              <th className="px-4 py-2.5">Mahasiswa</th>
+              <th className="px-4 py-2.5">Peserta</th>
               <th className="px-4 py-2.5">NIM</th>
               <th className="px-4 py-2.5">Helikopter</th>
               <th className="px-4 py-2.5">Status</th>
@@ -528,7 +528,7 @@ export default function SubmissionCharts({ submissions }) {
       <div className="dash-card p-8 text-center">
         <p className="text-sm text-slate-500">Belum ada data untuk grafik.</p>
         <p className="mt-1 text-xs text-slate-400">
-          Grafik akan muncul setelah mahasiswa mengirim tugas.
+          Grafik akan muncul setelah peserta mengirim tugas.
         </p>
       </div>
     );
