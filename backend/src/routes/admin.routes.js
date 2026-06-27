@@ -24,7 +24,7 @@ function attachAdminResponseType(req, _res, next) {
 router.post("/login", validate(adminLoginSchema), attachAdminResponseType, ctrl.login);
 router.get("/session", attachAdminResponseType, ctrl.session);
 
-// Admin profile
+// Admin profil
 router.get("/me", requireAdmin, attachAdminResponseType, ctrl.me);
 router.patch("/me", requireAdmin, validate(adminUpdateSelfSchema), attachAdminResponseType, ctrl.updateMe);
 
