@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique(map: "email") @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  nama      String    @db.VarChar(255)
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@map("admin")
+}
+
+model Pengajar {
+  id          Int       @id @default(autoincrement())
+  nid         String    @unique @db.VarChar(50)
+  namaLengkap String    @map("nama_lengkap") @db.VarChar(255)
+  prodi       String?   @db.VarChar(200)
+  email       String    @unique(map: "email") @db.VarChar(100)
+  password    String    @db.VarChar(255)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  deletedAt   DateTime? @map("deleted_at")
+  tugas       Tugas[]
+
+  @@map("pengajar")
+}
+
+enum SiswaCategory {
+  Mahasiswa      @map("Mahasiswa")
+  Praktisi       @map("Praktisi")
+  PesertaDiklat  @map("Peserta Diklat")
+  Lainnya        @map("Lainnya")
+}
+
+model Siswa {
+  id               Int               @id @default(autoincrement())
+  nama             String            @db.VarChar(225)
+  nim              String            @unique @db.VarChar(50)
+  prodi            String?           @db.VarChar(100)
+  category         SiswaCategory     @default(Mahasiswa)
+  kelas            String?           @db.VarChar(100)
+  email            String            @unique(map: "email") @db.VarChar(200)
+  password         String            @db.VarChar(255)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  deletedAt        DateTime?         @map("deleted_at")
+  pengumpulanTugas PengumpulanTugas[]
+
+  @@map("siswa")
+}
+
+model Tugas {
+  id               Int                @id @default(autoincrement())
+  judul            String             @db.VarChar(255)
+  deskripsi        String?            @db.Text
+  enrolCode        String             @unique(map: "enrol_code") @map("enrol_code") @db.VarChar(10)
+  pengajarId       Int                @map("pengajar_id")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  deletedAt        DateTime?          @map("deleted_at")
+  pengajar         Pengajar           @relation(fields: [pengajarId], references: [id])
+  pengumpulanTugas PengumpulanTugas[]
+
+  @@index([pengajarId])
+  @@map("tugas")
+}
+
+model PengumpulanTugas {
+  id        Int       @id @default(autoincrement())
+  tugasId   Int       @map("tugas_id")
+  siswaId   Int       @map("siswa_id")
+  pdf       String?   @db.VarChar(255)
+  nilai     Decimal?  @db.Decimal(5, 2)
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+  tugas     Tugas     @relation(fields: [tugasId], references: [id])
+  siswa     Siswa     @relation(fields: [siswaId], references: [id])
+
+  @@unique([tugasId, siswaId], map: "uq_tugas_siswa")
+  @@index([tugasId])
+  @@index([siswaId])
+  @@map("pengumpulan_tugas")
+}

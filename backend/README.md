@@ -1,44 +1,143 @@
-# Heliport Design Simulator
+# Heliport Simulator API
 
-Simulator desain heliport berbasis web untuk pembelajaran. Menghitung dimensi
-minimum TLOF, FATO, Safety Area, dan permukaan approach berdasarkan data
-helikopter, lalu memungkinkan penyusunan layout secara drag & drop.
-
-Referensi regulasi: **ICAO Annex 14 Vol II**, **ICAO Doc 9261 (Heliport Manual)**,
-**FAA AC 150/5390-2D**.
+REST API berbasis Node.js + Express + Prisma + MySQL untuk sistem LMS Heliport Design Simulator.
 
 ## Tech Stack
 
-- **Next.js 14** (App Router)
-- **Tailwind CSS**
-- **Three.js** — pratinjau 3D layout
-- **Fabric.js** — kanvas drag & drop layout 2D
-- **better-react-mathjax (MathJax)** — render rumus perhitungan
-- **html-to-image** + **jsPDF** — export PNG / PDF
+- **Express 5** — HTTP server
+- **Prisma** — ORM & migrasi database
+- **MySQL** — database
+- **Zod** — validasi request
+- **bcrypt** — hash password
+- **Multer** — upload PDF submission
 
-## Rumus Utama
-
-| Komponen   | Rumus                         |
-| ---------- | ----------------------------- |
-| TLOF (min) | `0.83 × D`                    |
-| FATO (min) | `1.0 × D`                     |
-| Safety Area| `max(3 m, 0.25 × D)`          |
-| Total      | `FATO + 2 × Safety Area`      |
-
-`D` = rotor diameter helikopter.
-
-## Menjalankan
+## Setup (MAMP)
 
 ```bash
+cd backend
+cp .env.example .env
+
 npm install
+npm run db:generate
+npm run db:push
+npm run db:seed   # opsional
 npm run dev
 ```
 
-Buka http://localhost:3000.
+API berjalan di `http://localhost:4000`.
 
-## Alur Aplikasi
+## Autentikasi
 
-1. **Input Data** — pilih/isi spesifikasi helikopter & arah angin.
-2. **Pilih Komponen** — palet komponen (TLOF, FATO, Safety, Approach, Wind Cone, Obstacle).
-3. **Desain Layout** — susun komponen pada kanvas Fabric.js.
-4. **Cek & Hasil** — tabel kesesuaian, rumus (MathJax), pratinjau 3D, export PDF/PNG.
+Semua endpoint (kecuali login/register) membutuhkan header:
+
+```
+Authorization: Bearer <token>
+```
+
+| Role | Login | Secret env |
+|------|-------|------------|
+| Admin | `POST /api/admin/login` | `ADMIN_SESSION_SECRET` |
+| Pengajar | `POST /api/pengajar/login` | `PENGAJAR_SESSION_SECRET` |
+| Siswa | `POST /api/siswa/login` atau `POST /api/siswa/register` | `SISWA_SESSION_SECRET` |
+
+## Endpoint
+
+### Admin — `/api/admin`
+
+| Method | Path | Auth | Keterangan |
+|--------|------|------|------------|
+| POST | `/login` | Public | Login |
+| GET | `/session` | Token | Cek sesi |
+| GET | `/me` | Admin | Profil sendiri |
+| PATCH | `/me` | Admin | Update profil/password |
+| GET | `/` | Admin | List admin (`?page=&limit=`) |
+| GET/POST/PUT/PATCH/DELETE | `/:id` | Admin | CRUD admin |
+
+### Pengajar — `/api/pengajar`
+
+| Method | Path | Auth | Keterangan |
+|--------|------|------|------------|
+| POST | `/login` | Public | Login (register dinonaktifkan) |
+| GET | `/session` | Token | Cek sesi |
+| GET/PATCH | `/me` | Pengajar | Profil sendiri |
+| GET/POST/PUT/PATCH/DELETE | `/` & `/:id` | Admin | CRUD pengajar |
+
+### Siswa — `/api/siswa`
+
+| Method | Path | Auth | Keterangan |
+|--------|------|------|------------|
+| POST | `/register` | Public | Daftar akun |
+| POST | `/login` | Public | Login |
+| GET | `/session` | Token | Cek sesi |
+| GET/PATCH | `/me` | Siswa | Profil sendiri |
+| GET/POST/PUT/PATCH/DELETE | `/` & `/:id` | Admin | CRUD siswa |
+
+### Tugas — `/api/tugas`
+
+| Method | Path | Auth | Keterangan |
+|--------|------|------|------------|
+| GET | `/siswa` | Siswa | List semua tugas guru |
+| GET | `/siswa/:id` | Siswa | Detail tugas |
+| POST | `/join` | Siswa | Join via kode enrol |
+| GET | `/pengajar` | Pengajar | List tugas milik sendiri |
+| GET | `/` | Admin | List semua tugas |
+| GET | `/:id` | Admin/Pengajar | Detail tugas |
+| POST/PUT/PATCH/DELETE | `/` & `/:id` | Pengajar | CRUD tugas sendiri |
+
+**Filter siswa** (`GET /siswa`):
+- `?joined=true|false` — sudah/belum join
+- `?submitted=true|false` — sudah/belum upload PDF
+- `?page=1&limit=20` — pagination
+
+### Pengumpulan Tugas — `/api/pengumpulan-tugas`
+
+| Method | Path | Auth | Keterangan |
+|--------|------|------|------------|
+| GET | `/admin` | Admin | List semua pengumpulan |
+| GET | `/admin/:id` | Admin | Detail |
+| GET | `/admin/:id/pdf` | Admin | Download PDF |
+| GET | `/siswa` | Siswa | List pengumpulan sendiri |
+| GET | `/siswa/:id/pdf` | Siswa | Download PDF sendiri |
+| POST | `/` | Siswa | Submit PDF (`tugas_id` + file) |
+| PUT/PATCH | `/:id` | Siswa | Update PDF |
+| GET | `/pengajar` | Pengajar | List pengumpulan tugas sendiri |
+| GET | `/pengajar/:id/pdf` | Pengajar | Download PDF siswa |
+| PATCH | `/:id/nilai` | Pengajar | Beri nilai (setelah PDF diserahkan) |
+
+## Response format
+
+**Sukses:**
+```json
+{ "success": true, "data": { ... } }
+```
+
+**List dengan pagination:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [ ... ],
+    "pagination": { "page": 1, "limit": 20, "total": 45, "totalPages": 3 }
+  }
+}
+```
+
+**Error:**
+```json
+{ "success": false, "error": "Pesan error" }
+```
+
+## Akun seed
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@heliport.id | admin123 |
+| Pengajar | dosen@heliport.id | dosen123 |
+| Siswa | mahasiswa@heliport.id | siswa123 |
+
+## Alur siswa
+
+1. `POST /api/siswa/register` atau login
+2. `GET /api/tugas/siswa` — lihat tugas
+3. `POST /api/tugas/join` — join dengan kode enrol
+4. `POST /api/pengumpulan-tugas` — upload PDF
